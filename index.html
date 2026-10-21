@@ -1,0 +1,112 @@
+<!doctype html>
+<!-- Made by _build.js: edit that, not this. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GeoTells: Learn the Metas</title>
+<meta name="description" content="Learn the metas: flags, road lines, alphabets, driving side... the clues that tell where a photo was taken. A few minutes a day.">
+<meta property="og:title" content="GeoTells: Learn the Metas">
+<meta property="og:description" content="Learn the clues that tell where a photo was taken, a few minutes a day.">
+<!-- Small and square: WhatsApp shows it as a thumbnail beside the text, not a big banner. -->
+<meta property="og:image" content="https://geotells.com/share.png">
+<meta property="og:image:width" content="192">
+<meta property="og:image:height" content="192">
+<meta name="theme-color" content="#0b1324">
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header class="app">
+    <img class="logo" src="icon.png" alt="" width="76" height="76">
+    <div>
+      <h1>GeoTells</h1>
+      <p class="by" data-es="Aprende las metas">Learn the metas</p>
+    </div>
+  </header>
+  <ul class="facts">
+    <li><b data-es="Gratis">Free</b><span data-es="precio">price</span></li>
+    <li><b id="size">25 MB</b><span data-es="descarga">download</span></li>
+    <li><b data-es="Sin anuncios">No ads</b><span data-es="nunca">ever</span></li>
+    <li><b>EN · ES</b><span data-es="idiomas">languages</span></li>
+  </ul>
+  <a class="install" href="https://github.com/geotells/geotells.github.io/releases/latest/download/GeoTells.apk"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.6 9.48l1.84-3.18a.38.38 0 0 0-.66-.38l-1.86 3.22A11.5 11.5 0 0 0 12 8.2c-1.74 0-3.38.37-4.92.94L5.22 5.92a.38.38 0 0 0-.66.38L6.4 9.48A10.8 10.8 0 0 0 1 18h22a10.8 10.8 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg><span data-es="Descargar para Android">Download for Android</span></a>
+  <p class="needs" data-es="Android 7.0 o superior · sin crear cuenta">Android 7.0 or later · no account needed</p>
+
+  <!-- store.js picks each image in the page's language; the browser picks
+       the light or dark one, as the phone is set. -->
+  <div class="shots" id="shots" aria-label="Screenshots">
+    <picture><source media="(prefers-color-scheme: light)"><img data-n="1" alt="Home: the daily challenge, the word of the day and the lessons" data-es-alt="Inicio: el reto diario, la palabra del día y las lecciones" width="540" height="1115"></picture>
+    <picture><source media="(prefers-color-scheme: light)"><img data-n="2" alt="A real car with its plate blurred: which country is it?" data-es-alt="Un coche real con la matrícula difuminada: ¿de qué país es?" width="540" height="1115"></picture>
+    <picture><source media="(prefers-color-scheme: light)"><img data-n="3" alt="Which writing is on the sign?" data-es-alt="¿Qué escritura hay en la señal?" width="540" height="1115" loading="lazy"></picture>
+    <picture><source media="(prefers-color-scheme: light)"><img data-n="4" alt="Missed it? The clue explained: yellow plates with the EU strip" data-es-alt="¿Fallaste? La pista explicada: matrículas amarillas con la franja de la UE" width="540" height="1115" loading="lazy"></picture>
+    <picture><source media="(prefers-color-scheme: light)"><img data-n="5" alt="Which country’s flag is this?" data-es-alt="¿De qué país es esta bandera?" width="540" height="1115" loading="lazy"></picture>
+    <picture><source media="(prefers-color-scheme: light)"><img data-n="6" alt="Find the country on the map" data-es-alt="Encuentra el país en el mapa" width="540" height="1115" loading="lazy"></picture>
+    <picture><source media="(prefers-color-scheme: light)"><img data-n="7" alt="Your result, ready to share" data-es-alt="Tu resultado, listo para compartir" width="540" height="1115" loading="lazy"></picture>
+  </div>
+
+  <section>
+    <h3 data-es="Acerca de esta app">About this app</h3>
+    <p data-es="En las fotos a pie de calle, las pistas de dónde estás se esconden en los detalles: las letras de los carteles, las matrículas, el lado por el que circulan los coches. GeoTells te las enseña con lecciones cortas, unos minutos al día, y un reto diario para jugar con amigos.">On street-level photos, the clues to where you are hide in the details: the letters on the signs, the plates, the side of the road the cars drive on. GeoTells teaches them in short lessons, a few minutes a day, and a daily challenge to play with friends.</p>
+    <ul class="chips">
+      <li data-es="Banderas">Flags</li>
+      <li data-es="Capitales">Capitals</li>
+      <li data-es="Alfabetos">Alphabets</li>
+      <li data-es="Lado de conducción">Driving side</li>
+      <li data-es="Matrículas">License plates</li>
+      <li data-es="Cobertura de Street View">Street View coverage</li>
+      <li data-es="Dominios web">Web domains</li>
+      <li data-es="Prefijos">Phone codes</li>
+      <li data-es="Reto diario">Daily challenge</li>
+      <li data-es="Palabra del día">Word of the day</li>
+    </ul>
+  </section>
+
+  <section>
+    <h3 data-es="Novedades">What’s new</h3>
+    <p class="meta" id="release">Version 2.0.0</p>
+    <ul class="list">
+      <li data-es="GeoSense ahora es GeoTells: el mismo juego, con otro nombre.">GeoSense is now GeoTells: same game, new name.</li>
+      <li data-es="Trae tu progreso de GeoSense con un toque: tu nivel, tu racha y todo lo que has aprendido.">Bring your GeoSense progress along with one tap: your level, your streak and everything you have learned.</li>
+      <li data-es="Avisa de una pregunta errónea y gana XP cuando se corrija.">Report a wrong question and get XP when it is fixed.</li>
+    </ul>
+  </section>
+
+  <section class="from" id="geosense">
+    <h3 data-es="¿Vienes de GeoSense?">Coming from GeoSense?</h3>
+    <p data-es="GeoSense ahora se llama GeoTells. Abre GeoSense y pulsa &lt;b&gt;Pasar mi progreso a GeoTells&lt;/b&gt;: abre GeoTells con tu progreso, o te trae aquí para instalarla antes. También puedes escribir tu código de traspaso (GeoSense › Ajustes › &lt;b&gt;Código de traspaso&lt;/b&gt;) en GeoTells: en su pantalla de bienvenida, en &lt;b&gt;¿Vienes de GeoSense?&lt;/b&gt;, o en sus Ajustes.">GeoSense is now called GeoTells. Open GeoSense and tap <b>Move my progress to GeoTells</b>: it opens GeoTells with your progress, or brings you here to install it first. Or type your transfer code (GeoSense › Settings › <b>Transfer code</b>) in GeoTells: on its welcome screen, under <b>From GeoSense?</b>, or in its Settings.</p>
+  </section>
+
+  <section>
+    <h3 data-es="Privacidad">Privacy</h3>
+    <ul class="privacy">
+      <li><span aria-hidden="true">👤</span><span data-es="Sin cuenta y sin registro.">No account and no sign-in.</span></li>
+      <li><span aria-hidden="true">📱</span><span data-es="Tu progreso se guarda en tu móvil, con una copia anónima en nuestro servidor para que no se pierda. Puedes desactivarla en Ajustes.">Your progress is saved on your phone, with an anonymous copy on our server so it is not lost. You can turn it off in Settings.</span></li>
+      <li><span aria-hidden="true">🚫</span><span data-es="Sin anuncios, sin analíticas de terceros y sin rastreo.">No ads, no third-party analytics and no tracking.</span></li>
+      <li><span aria-hidden="true">📊</span><span data-es="Una vez al día anota de forma anónima que se abrió la app, para contar jugadores. Puedes desactivarlo en Ajustes.">Once a day it anonymously notes that the app was opened, to count players. You can turn it off in Settings.</span></li>
+      <li><span aria-hidden="true">🔔</span><span data-es="Los recordatorios, si los activas, pasan por nuestro servidor: un identificador anónimo, la dirección push de tu móvil y cuándo enviarlos.">Reminders, if you turn them on, go through our server: an anonymous identifier, your phone’s push address and when to send them.</span></li>
+      <li><span aria-hidden="true">✉️</span><span data-es="Si notificas un error en una pregunta, envía esa pregunta, tu comentario y la versión de la app.">When you report an error in a question, it sends that question, your comment and the app’s version.</span></li>
+    </ul>
+    <p class="more"><a href="privacy" data-es="Lee la política de privacidad">Read the privacy policy</a></p>
+  </section>
+
+  <details id="install">
+    <summary data-es="Cómo instalarla">How to install it</summary>
+    <p class="note" data-es="GeoTells aún no está en Google Play, así que Android hace alguna pregunta más la primera vez. Es segura: acepta.">GeoTells is not on Google Play yet, so Android asks a few extra questions the first time. It is safe: say yes to them.</p>
+    <ol>
+      <li data-es="Pulsa &lt;b&gt;Descargar para Android&lt;/b&gt;. Si el navegador avisa de que el archivo puede ser dañino, pulsa &lt;b&gt;Descargar de todos modos&lt;/b&gt;.">Tap <b>Download for Android</b>. If the browser warns that the file could be harmful, tap <b>Download anyway</b>.</li>
+      <li data-es="Abre &lt;b&gt;GeoTells.apk&lt;/b&gt;: desde el aviso de descarga, o desde la app &lt;b&gt;Archivos&lt;/b&gt;, en Descargas.">Open <b>GeoTells.apk</b>: from the download notification, or from the <b>Files</b> app, in Downloads.</li>
+      <li data-es="Si dice que tu móvil no puede instalar apps desconocidas de esta fuente, pulsa &lt;b&gt;Ajustes&lt;/b&gt;, activa &lt;b&gt;Permitir de esta fuente&lt;/b&gt; y vuelve atrás. Así das permiso al navegador (o a la app Archivos) para instalar apps; luego puedes quitarlo.">If it says your phone is not allowed to install unknown apps from this source, tap <b>Settings</b>, turn on <b>Allow from this source</b> and go back. This lets your browser (or the Files app) install apps; you can turn it off afterwards.</li>
+      <li data-es="Si alguna protección de seguridad del móvil bloquea la instalación (algunas marcas incluyen un bloqueador automático), desactívala un momento en &lt;b&gt;Ajustes › Seguridad&lt;/b&gt;, instala GeoTells y vuelve a activarla.">If a security feature of your phone blocks the installation (some brands include an automatic blocker), turn it off for a moment in <b>Settings › Security</b>, install GeoTells and turn it back on.</li>
+      <li data-es="Si &lt;b&gt;Google Play Protect&lt;/b&gt; dice que no conoce la app, pulsa &lt;b&gt;Más detalles&lt;/b&gt; y luego &lt;b&gt;Instalar de todos modos&lt;/b&gt;.">If <b>Google Play Protect</b> says it does not know the app, tap <b>More details</b> and then <b>Install anyway</b>.</li>
+      <li data-es="Pulsa &lt;b&gt;Instalar&lt;/b&gt; y luego &lt;b&gt;Abrir&lt;/b&gt;. Para actualizarla más adelante, vuelve a descargarla desde aquí e instálala encima: no pierdes tu progreso.">Tap <b>Install</b>, then <b>Open</b>. To update it later, download it again from here and install it over the old one: your progress stays.</li>
+    </ol>
+  </details>
+
+  <p class="legal" data-es="GeoTells es una app independiente, sin relación con Google. Android es una marca de Google LLC.">GeoTells is an independent app, not affiliated with Google. Android is a trademark of Google LLC.</p>
+</main>
+<script src="lang.js"></script>
+<script src="store.js"></script>
+</body>
+</html>

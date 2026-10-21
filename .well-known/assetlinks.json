@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.geotells.app",
+      "sha256_cert_fingerprints": [
+        "5C:11:60:E5:5E:BA:6C:C6:12:EF:F3:8D:FF:D8:0D:9B:D2:7B:99:3F:8D:4F:57:74:49:E3:B8:47:22:E5:FC:CD"
+      ]
+    }
+  }
+]

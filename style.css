@@ -1,0 +1,189 @@
+:root {
+  --bg: #0b1324;
+  --card: #131f38;
+  --line: #24314f;
+  --text: #f5f1e8;
+  --muted: #a9b2c6;
+  --gold: #d4a53e;
+  --ink: #0b1324;
+}
+@media (prefers-color-scheme: light) {
+  :root { --bg: #f5f3ee; --card: #ffffff; --line: #e2ddd0; --text: #0b1324; --muted: #5b6477; }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 16px 40px;
+}
+h1, h2, h3 { line-height: 1.2; }
+
+/* A daily challenge link: the invitation above the app. */
+.invite {
+  background: var(--card);
+  border: 1px solid var(--gold);
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin-bottom: 26px;
+}
+.invite h2 { margin: 6px 0 4px; font-size: 24px; }
+.invite p:last-child { margin: 0; color: var(--muted); }
+.eyebrow {
+  margin: 0;
+  color: var(--gold);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+
+/* Icon, name and tagline, as app pages usually start. */
+.app { display: flex; align-items: center; gap: 18px; }
+.logo { border-radius: 20px; flex: none; }
+.app h1 { margin: 0; font-size: 30px; }
+.by { margin: 2px 0 0; color: var(--gold); font-weight: 700; }
+
+/* Price, size, ads, languages: one row, each with a small caption. */
+.facts {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 22px 0;
+}
+.facts li {
+  flex: 1;
+  text-align: center;
+  padding: 0 6px;
+  border-left: 1px solid var(--line);
+}
+.facts li:first-child { border-left: 0; }
+.facts b { display: block; font-size: 15px; white-space: nowrap; }
+.facts span { color: var(--muted); font-size: 12px; }
+
+.install {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--gold);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 18px;
+  text-decoration: none;
+}
+.install svg { width: 26px; height: 26px; }
+.needs { margin: 8px 0 0; text-align: center; color: var(--muted); font-size: 13px; }
+
+/* Screenshots side by side, swiped through. */
+.shots {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  margin: 26px -16px 8px;
+  padding: 0 16px 10px;
+  scrollbar-width: thin;
+}
+.shots picture { flex: none; display: block; scroll-snap-align: start; }
+.shots img {
+  display: block;
+  height: 400px;
+  width: auto;
+  aspect-ratio: 540 / 1115;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+
+section { margin-top: 26px; }
+section h3 { margin: 0 0 8px; font-size: 20px; }
+section p { margin: 0; color: var(--muted); }
+.meta { font-size: 14px; margin-bottom: 6px !important; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 14px 0 0; }
+.chips li {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 14px;
+}
+.list { color: var(--muted); padding-left: 20px; margin: 0; }
+.list li { margin-bottom: 4px; }
+.privacy { list-style: none; padding: 0; margin: 0; }
+.privacy li {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+}
+.privacy li:last-child { border-bottom: 0; }
+
+details {
+  margin-top: 26px;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 14px 18px;
+}
+summary { cursor: pointer; font-weight: 700; }
+.note { color: var(--muted); font-size: 15px; margin: 10px 0 0; }
+ol { color: var(--muted); padding-left: 20px; margin: 10px 0 4px; }
+ol li { margin-bottom: 6px; }
+ol b { color: var(--text); }
+
+.legal { margin-top: 30px; text-align: center; color: var(--muted); font-size: 12px; }
+
+.more { margin-top: 10px !important; font-size: 15px; }
+a { color: var(--gold); }
+
+/* The privacy policy: plain reading, the same look as the app's page. */
+.policy h1 { margin: 14px 0 4px; font-size: 30px; }
+.policy > .meta { color: var(--muted); }
+.policy section p { margin-bottom: 10px; }
+.policy .list { margin-bottom: 10px; }
+.back { text-decoration: none; font-weight: 700; }
+
+/* The import page: GeoSense's players, with their transfer code. */
+.import .invite { margin: 24px 0 0; }
+.import h1 { font-size: 26px; }
+.code {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 12px 12px 18px;
+}
+.code output {
+  flex: 1;
+  min-width: 0;
+  font: 800 24px/1.2 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.copy {
+  flex: none;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  background: var(--gold);
+  color: var(--ink);
+  font: 800 15px system-ui, sans-serif;
+  cursor: pointer;
+}
+.steps { padding-left: 22px; margin: 26px 0 0; color: var(--muted); }
+.steps > li { margin-bottom: 22px; }
+.steps > li > b { display: block; margin-bottom: 10px; color: var(--text); font-size: 17px; }
+.install.secondary { background: transparent; color: var(--gold); border: 2px solid var(--gold); }
+.from { background: var(--card); border-radius: 16px; padding: 14px 18px; }

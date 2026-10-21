@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<!-- Only what the panel needs: its own files, supabase-js from jsDelivr,
+     the fonts, Supabase, GitHub's release count, and Google's Street View
+     viewer for the Scenes tab (what Google asks to allow for it). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net https://maps.googleapis.com https://maps.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://*.ggpht.com https://*.google.com; connect-src https://kvlhqytsdhstkjhoclxu.supabase.co wss://kvlhqytsdhstkjhoclxu.supabase.co https://api.github.com https://*.googleapis.com https://*.google.com https://*.gstatic.com; worker-src blob:; frame-src https://*.google.com; base-uri 'none'; form-action 'none'">
+<title>GeoTells Faro</title>
+<link rel="icon" href="icon.png">
+<meta name="theme-color" content="#0b1426">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="faro.css">
+<script type="module" src="faro.js"></script>
+</head>
+<body>
+<main>
+  <!-- Signing in: password, then the authenticator code (or setting it up). -->
+  <section class="gate" id="v-login" hidden>
+    <img src="icon.png" alt="" class="gate-icon">
+    <p class="eyebrow">GeoTells</p>
+    <h1>Faro</h1>
+    <form id="f-login" class="stack">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" required>
+      <p class="error" id="login-error" hidden></p>
+      <button class="primary" type="submit">Sign in</button>
+    </form>
+  </section>
+
+  <section class="gate" id="v-mfa" hidden>
+    <img src="icon.png" alt="" class="gate-icon">
+    <p class="eyebrow">Two-step check</p>
+    <h1 id="mfa-title">Authenticator code</h1>
+    <div id="mfa-enroll" class="stack" hidden>
+      <p class="note">Scan this with your authenticator app (Google Authenticator, Microsoft Authenticator…). You only do this once.</p>
+      <img id="mfa-qr" alt="QR code for the authenticator app" class="qr">
+      <p class="note">Or type this key: <code id="mfa-secret"></code></p>
+    </div>
+    <form id="f-mfa" class="stack">
+      <label for="code">6-digit code from the app</label>
+      <input id="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
+      <p class="error" id="mfa-error" hidden></p>
+      <button class="primary" type="submit">Continue</button>
+      <button type="button" class="link" data-action="sign-out">Sign out</button>
+    </form>
+  </section>
+
+  <section class="gate" id="v-denied" hidden>
+    <img src="icon.png" alt="" class="gate-icon">
+    <h1>Not an admin</h1>
+    <p class="note">This account can sign in but has no access to the panel.</p>
+    <button type="button" data-action="sign-out">Sign out</button>
+  </section>
+
+  <div id="v-panel" hidden>
+    <header class="top">
+      <img src="icon.png" alt="">
+      <div class="head-text">
+        <h1>Geo<span>Tells</span> Faro</h1>
+        <span class="when" id="who"></span>
+      </div>
+      <button type="button" data-action="sign-out">Sign out</button>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" role="tab" data-tab="reports" aria-selected="true">Reports <span class="badge" id="new-count" hidden></span></button>
+      <button type="button" role="tab" data-tab="scenes">Scenes <span class="badge" id="scene-count" hidden></span></button>
+      <button type="button" role="tab" data-tab="stats">Stats</button>
+      <button type="button" role="tab" data-tab="versions">Versions</button>
+      <button type="button" role="tab" data-tab="settings">Settings</button>
+    </nav>
+    <p class="error" id="panel-error" hidden></p>
+
+    <!-- Reports -->
+    <section id="t-reports" class="tab">
+      <div class="bar">
+        <div class="chips" id="status-filter"></div>
+        <label class="toggle"><input type="checkbox" id="grouped" checked> Group by question</label>
+        <button type="button" id="reload-reports">Refresh</button>
+      </div>
+      <div id="report-list" class="stack"></div>
+    </section>
+
+    <!-- Scenes waiting for approval -->
+    <section id="t-scenes" class="tab" hidden>
+      <div class="bar">
+        <select id="batch" aria-label="Batch"></select>
+        <span class="when" id="scene-progress"></span>
+      </div>
+      <p class="note">Each card is the fixed view the player gets, in Google's own viewer: drag to look around, then Reset. Mark each one; it is saved at once.</p>
+      <div id="scene-list" class="scene-grid"></div>
+    </section>
+
+    <!-- Stats -->
+    <section id="t-stats" class="tab" hidden>
+      <div class="bar"><span class="when" id="stats-when">Loading…</span><button type="button" id="reload-stats">Refresh</button></div>
+      <div class="kpis">
+        <div class="kpi lead"><span class="label">Website downloads</span><span class="value" id="k-downloads">—</span><span class="sub" id="k-downloads-sub">All stable versions</span></div>
+        <div class="kpi"><span class="label">Active today</span><span class="value" id="k-today">—</span><span class="sub">Installs that opened the app (UTC day)</span></div>
+        <div class="kpi"><span class="label">Active last 7 days</span><span class="value" id="k-week">—</span><span class="sub" id="k-week-sub">Each install once</span></div>
+        <div class="kpi"><span class="label">Come back</span><span class="value" id="k-return">—</span><span class="sub" id="k-return-sub">Installs that played on 2+ days</span></div>
+      </div>
+      <div class="grid">
+        <div class="card"><h3>Active installs per day</h3><p class="note">Each install once a day, phones only.</p>
+          <div class="legend"><span><i class="sw faint"></i>Seen before</span><span><i class="sw gold"></i>New that day</span></div>
+          <div class="chart" id="c-daily"></div></div>
+        <div class="card"><h3>Days played per install</h3><p class="note">More than one day means they came back.</p><div class="chart" id="c-days"></div></div>
+        <div class="card"><h3>Downloads per stable version</h3><p class="note">From the website, while each version was the latest. The current one is live.</p><div class="chart" id="c-downloads"></div></div>
+        <div class="card"><h3>Version in use</h3><p class="note">Last 30 days, the version each install last opened with.</p><div class="chart" id="c-versions"></div></div>
+        <div class="card"><h3>Player levels</h3><p class="note">From cloud progress copies, test builds left out.</p><div class="chart" id="c-levels"></div></div>
+        <div class="card"><h3>Current streaks</h3><p class="note">Days in a row, from the same copies.</p><div class="chart" id="c-streaks"></div></div>
+        <div class="card"><h3>Daily challenge results</h3><p class="note">Real players only, scores out of 10.</p>
+          <div class="scroll"><table><thead><tr><th>Challenge</th><th class="n">Players</th><th class="n">Average</th><th class="n">Perfect 10s</th><th class="n">Avg. time</th></tr></thead><tbody id="t-challenge"></tbody></table></div></div>
+        <div class="card"><h3>Reminders and backups</h3><p class="note">Installs on the server right now.</p><ul class="list" id="l-counts"></ul></div>
+        <div class="card"><h3>Emulators and local builds</h3><p class="note">Last 30 days. Kept out of every count above.</p><ul class="list" id="l-tests"></ul></div>
+      </div>
+    </section>
+
+    <!-- Versions -->
+    <section id="t-versions" class="tab" hidden>
+      <div class="bar">
+        <div class="chips" id="version-app" role="group" aria-label="App">
+          <button type="button" class="chip" data-app="geotells" aria-pressed="true">GeoTells</button>
+          <button type="button" class="chip" data-app="geosense" aria-pressed="false">GeoSense</button>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3 id="versions-title">Update rule</h3>
+          <p class="note">Versions below <b>recommended</b> are asked every 3 days to update from the app's website. Versions below <b>minimum</b> are blocked until they update. Leave empty for no one.</p>
+          <form id="f-versions" class="stack">
+            <label for="recommended">Recommended</label>
+            <input id="recommended" placeholder="e.g. 2.1.0" pattern="\d+\.\d+\.\d+">
+            <label for="minimum">Minimum</label>
+            <input id="minimum" placeholder="e.g. 2.0.0" pattern="\d+\.\d+\.\d+">
+            <p class="note" id="versions-updated"></p>
+            <p class="error" id="versions-error" hidden></p>
+            <button class="primary" type="submit">Save</button>
+          </form>
+        </div>
+        <div class="card"><h3>Versions in use</h3><p class="note">Last 30 days, installs that share usage, of this app (GeoSense is 1.x, GeoTells 2.x and up).</p><div class="chart" id="c-versions-2"></div></div>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section id="t-settings" class="tab" hidden>
+      <div class="grid">
+        <div class="card">
+          <h3>Report alerts on your phone</h3>
+          <p class="note">A push for every new report, on the phone where you play. In the app, open Settings → transfer code on that phone and type it here. The app needs notifications on.</p>
+          <p id="alert-state" class="note"></p>
+          <form id="f-alert" class="stack">
+            <label for="transfer">Transfer code</label>
+            <input id="transfer" placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false">
+            <p class="error" id="alert-error" hidden></p>
+            <div class="row">
+              <button class="primary" type="submit">Use this phone</button>
+              <button type="button" id="alert-test">Send a test</button>
+              <button type="button" id="alert-off">Turn off</button>
+            </div>
+          </form>
+        </div>
+        <div class="card">
+          <h3>Account</h3>
+          <p class="note" id="account"></p>
+          <p class="note">Signed in with a password and an authenticator code. Every action is checked by the server, not by this page.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- One report group's actions, filled per group. -->
+<template id="tpl-group">
+  <article class="card group">
+    <button type="button" class="group-head">
+      <span class="group-title"></span>
+      <span class="group-meta"></span>
+    </button>
+    <div class="group-body" hidden>
+      <div class="reports"></div>
+      <form class="stack edit">
+        <div class="row">
+          <label>Status
+            <select name="status">
+              <option value="new">New</option>
+              <option value="reviewing">Reviewing</option>
+              <option value="fixed">Fixed</option>
+              <option value="dismissed">Dismissed</option>
+            </select>
+          </label>
+          <label class="fixed-in">Fixed in <input name="fixed_in" placeholder="2.1.0" pattern="\d+\.\d+\.\d+"></label>
+        </div>
+        <label>Message to the player <span class="faint">(optional, shown with the thanks, in their language)</span>
+          <input name="message" maxlength="300">
+        </label>
+        <label>Note <span class="faint">(only for you)</span>
+          <textarea name="note" rows="2" maxlength="2000"></textarea>
+        </label>
+        <p class="error" hidden></p>
+        <div class="row"><button class="primary" type="submit">Save</button><span class="saved note" hidden>Saved</span></div>
+      </form>
+    </div>
+  </article>
+</template>
+</body>
+</html>
