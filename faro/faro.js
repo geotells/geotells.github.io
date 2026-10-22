@@ -484,7 +484,7 @@ let lastStats = null;
 async function loadStats() {
   const [stats, releases] = await Promise.all([call('admin_stats'), fetchReleases()]);
   lastStats = [stats, releases];
-  drawStats(stats, release);
+  drawStats(stats, releases);
 }
 
 const NS = 'http://www.w3.org/2000/svg';
