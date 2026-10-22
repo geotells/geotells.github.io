@@ -14,6 +14,9 @@ const RELEASES = [
   { repo: 'geotells/geotells.github.io', apk: 'GeoTells.apk' },
   { repo: 'geosenselearnthemetas-arch/geosenselearnthemetas-arch.github.io', apk: 'GeoSense.apk' },
 ];
+// Website downloads that were ours, not players': a release's APK fetched
+// to check it. Taken off each version's count, live or closed.
+const OWN_DOWNLOADS = { '2.0.0': 1, '1.7.0': 1 };
 // Google's Street View viewer for the Scenes tab: a browser key that only
 // works on the panel's own sites (Maps JavaScript API only). Public by
 // design, like the publishable key above.
@@ -137,12 +140,14 @@ async function enterPanel() {
   $('who').textContent = data.user?.email ?? '';
   $('account').textContent = `Signed in as ${data.user?.email ?? 'unknown'}.`;
   show('v-panel');
-  openTab(location.hash.slice(1) || 'reports');
+  openTab(location.hash.slice(1) || 'stats');
+  // The new reports and scenes on their tabs' badges, whichever tab opened.
+  for (const load of [loadReports, loadScenes]) load().catch(() => {});
 }
 
 const loaded = {};
 function openTab(name) {
-  if (!$(`t-${name}`)) name = 'reports';
+  if (!$(`t-${name}`)) name = 'stats';
   for (const b of document.querySelectorAll('[data-tab]')) b.setAttribute('aria-selected', String(b.dataset.tab === name));
   for (const t of document.querySelectorAll('.tab')) t.hidden = t.id !== `t-${name}`;
   history.replaceState(null, '', `#${name}`);
@@ -567,7 +572,9 @@ function listRows(box, rows, emptyText) {
 
 function drawStats(s, releases) {
   $('stats-when').textContent = `Updated ${new Date(s.at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}`;
-  const history = s.downloads.map((d) => ({ ...d, live: false }));
+  const players = (d) => ({ ...d, downloads: Math.max(0, d.downloads - (OWN_DOWNLOADS[d.version] ?? 0)) });
+  releases = releases.map(players);
+  const history = s.downloads.map((d) => ({ ...players(d), live: false }));
   for (const release of releases) {
     if (!history.some((d) => d.version === release.version)) history.push({ ...release, live: true });
   }

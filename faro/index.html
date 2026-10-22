@@ -17,8 +17,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&display=swap">
 <!-- ?v= changes with every change to them: the site lets browsers keep a file
      10 minutes, and a new version must not wait behind the old one. -->
-<link rel="stylesheet" href="faro.css?v=2026-10-22b">
-<script type="module" src="faro.js?v=2026-10-22b"></script>
+<link rel="stylesheet" href="faro.css?v=2026-10-22c">
+<script type="module" src="faro.js?v=2026-10-22c"></script>
 </head>
 <body>
 <main>
@@ -73,16 +73,16 @@
     </header>
 
     <nav class="tabs" role="tablist">
-      <button type="button" role="tab" data-tab="reports" aria-selected="true">Reports <span class="badge" id="new-count" hidden></span></button>
+      <button type="button" role="tab" data-tab="stats" aria-selected="true">Stats</button>
+      <button type="button" role="tab" data-tab="reports">Reports <span class="badge" id="new-count" hidden></span></button>
       <button type="button" role="tab" data-tab="scenes">Scenes <span class="badge" id="scene-count" hidden></span></button>
-      <button type="button" role="tab" data-tab="stats">Stats</button>
       <button type="button" role="tab" data-tab="versions">Versions</button>
       <button type="button" role="tab" data-tab="settings">Settings</button>
     </nav>
     <p class="error" id="panel-error" hidden></p>
 
     <!-- Reports -->
-    <section id="t-reports" class="tab">
+    <section id="t-reports" class="tab" hidden>
       <div class="bar">
         <div class="chips" id="status-filter"></div>
         <label class="toggle"><input type="checkbox" id="grouped" checked> Group by question</label>
@@ -102,7 +102,7 @@
     </section>
 
     <!-- Stats -->
-    <section id="t-stats" class="tab" hidden>
+    <section id="t-stats" class="tab">
       <div class="bar"><span class="when" id="stats-when">Loading…</span><button type="button" id="reload-stats">Refresh</button></div>
       <div class="kpis">
         <div class="kpi lead"><span class="label">Website downloads</span><span class="value" id="k-downloads">—</span><span class="sub" id="k-downloads-sub">All stable versions</span></div>
