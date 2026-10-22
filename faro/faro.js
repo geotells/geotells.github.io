@@ -159,6 +159,9 @@ function panelError(e) {
   say($('panel-error'), `Something went wrong: ${e.message}`);
 }
 
+// Loaded again (Refresh, a filter): an earlier error goes once it works.
+const reload = (load) => load().then(() => say($('panel-error')), panelError);
+
 // ---- Reports ---------------------------------------------------------
 
 const STATUSES = [['new', 'New'], ['reviewing', 'Reviewing'], ['fixed', 'Fixed'], ['dismissed', 'Dismissed'], ['all', 'All']];
@@ -172,7 +175,7 @@ async function loadReports() {
   drawReports();
 }
 
-$('reload-reports').addEventListener('click', () => loadReports().catch(panelError));
+$('reload-reports').addEventListener('click', () => reload(loadReports));
 $('grouped').addEventListener('change', drawReports);
 
 function drawFilter() {
@@ -186,7 +189,7 @@ function drawFilter() {
     chip.className = 'chip';
     chip.setAttribute('aria-pressed', String(filter === key));
     chip.textContent = `${label} ${num.format(key === 'all' ? all : counts[key] ?? 0)}`;
-    chip.addEventListener('click', () => { filter = key; loadReports().catch(panelError); });
+    chip.addEventListener('click', () => { filter = key; reload(loadReports); });
     box.appendChild(chip);
   }
   const fresh = counts.new ?? 0;
@@ -368,7 +371,7 @@ async function loadScenes() {
   drawScenes(data.scenes);
 }
 
-$('batch').addEventListener('change', () => { sceneBatch = $('batch').value; loadScenes().catch(panelError); });
+$('batch').addEventListener('change', () => { sceneBatch = $('batch').value; reload(loadScenes); });
 
 function sceneProgress(scenes) {
   const ok = scenes.filter((s) => s.verdict === 'ok').length, no = scenes.filter((s) => s.verdict === 'no').length;
@@ -465,7 +468,7 @@ async function showPanorama(el, sc) {
 
 // ---- Stats (as the old stats page draws them) -------------------------
 
-$('reload-stats').addEventListener('click', () => loadStats().catch(panelError));
+$('reload-stats').addEventListener('click', () => reload(loadStats));
 
 async function fetchRelease({ repo, apk: name }) {
   try {
@@ -627,7 +630,7 @@ for (const chip of document.querySelectorAll('#version-app .chip')) {
     versionApp = chip.dataset.app;
     for (const c of document.querySelectorAll('#version-app .chip')) c.setAttribute('aria-pressed', String(c === chip));
     say($('versions-error'));
-    loadVersions().catch(panelError);
+    reload(loadVersions);
   });
 }
 
