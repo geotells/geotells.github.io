@@ -471,9 +471,68 @@ async function showPanorama(el, sc) {
   }
 }
 
-// ---- Stats (as the old stats page draws them) -------------------------
+// ---- Stats -----------------------------------------------------------
 
+// What admin_stats gives (supabase/migrations/20261023120000_faro_stats.sql)
+// comes per app where it can, so the tab shows GeoTells, GeoSense or both:
+// the two never share an install, so their counts add up.
 $('reload-stats').addEventListener('click', () => reload(loadStats));
+
+const APPS = ['both', 'geotells', 'geosense'];
+let statsApp = (() => { try { return APPS.find((a) => a === localStorage.getItem('faro-stats-app')) ?? 'both'; } catch { return 'both'; } })();
+const inApp = (r) => statsApp === 'both' || r.app === statsApp;
+const appOfVersion = (v) => (v.startsWith('1.') ? 'geosense' : 'geotells');
+
+for (const chip of document.querySelectorAll('#stats-app .chip')) {
+  chip.setAttribute('aria-pressed', String(chip.dataset.app === statsApp));
+  chip.addEventListener('click', () => {
+    statsApp = chip.dataset.app;
+    try { localStorage.setItem('faro-stats-app', statsApp); } catch { /* kept for this visit only */ }
+    for (const c of document.querySelectorAll('#stats-app .chip')) c.setAttribute('aria-pressed', String(c === chip));
+    if (lastStats) drawStats(...lastStats);
+  });
+}
+
+// The lessons in the order they open, with what opens them.
+const LESSONS = [
+  ['hemisphere', 'Hemispheres', 'L1'], ['continent', 'Continents', 'L1'], ['map', 'Find the country', 'L1'],
+  ['flag', 'Flags', 'L2'], ['plate', 'Plates', 'L3'], ['driving_side', 'Driving side', 'L4'], ['coverage', 'Coverage', 'L5'],
+  ['capital', 'Capitals', 'L6'], ['neighbours', 'Neighbors', 'L7'], ['alphabet', 'Alphabets', 'L8'],
+  ['latin_letters', 'Latin letters', 'Alphabets 1'], ['lookalike', 'Look-alike scripts', 'Alphabets 2'],
+  ['road_lines', 'Road lines', 'L9'], ['language', 'Languages', 'L10'], ['street_names', 'Street names', 'Languages'],
+  ['domain', 'Domains', 'L11'], ['coast', 'Coasts', 'L12'], ['city', 'Cities', 'L13'], ['phone', 'Phone codes', 'L14'],
+  ['us_states', 'US states', 'L15'], ['ca_provinces', 'Canadian provinces', 'L15'], ['stop_signs', 'Stop signs', 'L16'],
+  ['front_plates', 'Front plates', 'L17'],
+];
+const lessonOrder = (key) => { const i = LESSONS.findIndex(([k]) => k === key); return i < 0 ? LESSONS.length : i; };
+const lessonName = (key) => LESSONS.find(([k]) => k === key)?.[1] ?? key;
+
+// A subject as a person reads it: a country's name for its code, words for
+// the rest ("yellowEu" as "yellow eu").
+const regions = new Intl.DisplayNames('en', { type: 'region' });
+function subjectName(skill, s) {
+  if (/^[A-Z]{2}$/.test(s) && skill !== 'us_states' && skill !== 'ca_provinces') {
+    try { return regions.of(s); } catch { return s; }
+  }
+  const words = s.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ');
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+const day = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
+const total = (rows, key) => rows.reduce((n, r) => n + (Number(r[key]) || 0), 0);
+const share = (a, b) => (b ? pct.format(a / b) : '—');
+
+// The rows of the apps shown, those with the same key added up.
+function merged(rows, keyOf, fields) {
+  const out = new Map();
+  for (const r of rows.filter(inApp)) {
+    const k = keyOf(r);
+    const t = out.get(k);
+    if (!t) out.set(k, { ...r });
+    else for (const f of fields) t[f] += r[f];
+  }
+  return [...out.values()];
+}
 
 async function fetchRelease({ repo, apk: name }) {
   try {
@@ -507,8 +566,9 @@ const shortDay = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en', { mo
 
 function empty(box, message) { box.replaceChildren(); const p = document.createElement('p'); p.className = 'empty'; p.textContent = message; box.appendChild(p); }
 
-// Columns, stacked when there are several series. Values on top of each.
-function columns(box, rows, label, series, { height = 200 } = {}) {
+// Columns, stacked when there are several series. Values on top of each;
+// a column that is not over yet (dim) drawn fainter.
+function columns(box, rows, label, series, { height = 200, dim = () => false } = {}) {
   if (!rows.length) return empty(box, 'Nothing yet.');
   box.replaceChildren();
   const W = Math.max(280, box.clientWidth), H = height, top = 20, bottom = 26;
@@ -521,38 +581,40 @@ function columns(box, rows, label, series, { height = 200 } = {}) {
   const labelEvery = Math.ceil(rows.length / Math.max(1, Math.floor(W / 52)));
   rows.forEach((r, i) => {
     const cx = step * i + step / 2;
+    const g = el('g', dim(r) ? { opacity: 0.45 } : {});
+    svg.appendChild(g);
     let base = 0;
     series.forEach((s, j) => {
       const v = r[s.key];
       if (v > 0) {
         const last = series.slice(j + 1).every((n) => !(r[n.key] > 0));
         const h = y(base) - y(base + v);
-        svg.appendChild(el('rect', { x: cx - bw / 2, y: y(base + v), width: bw, height: Math.max(h, 1), rx: last ? 5 : 0, fill: s.color(r) }));
-        if (last) svg.appendChild(el('rect', { x: cx - bw / 2, y: y(base + v) + h / 2, width: bw, height: h / 2, fill: s.color(r) }));
+        g.appendChild(el('rect', { x: cx - bw / 2, y: y(base + v), width: bw, height: Math.max(h, 1), rx: last ? 5 : 0, fill: s.color(r) }));
+        if (last) g.appendChild(el('rect', { x: cx - bw / 2, y: y(base + v) + h / 2, width: bw, height: h / 2, fill: s.color(r) }));
       }
       base += v;
     });
-    svg.appendChild(el('text', { x: cx, y: y(base) - 6, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, fill: 'var(--text)' }, num.format(base)));
+    if (base > 0 || rows.length <= 12) g.appendChild(el('text', { x: cx, y: y(base) - 6, 'text-anchor': 'middle', 'font-size': 12, 'font-weight': 700, fill: 'var(--text)' }, num.format(base)));
     if (i % labelEvery === 0) svg.appendChild(el('text', { x: cx, y: H - 8, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)' }, label(r)));
   });
 }
 
 // Horizontal bars with the name on the left and the value at the end.
-function bars(box, rows, name, value, color) {
+function bars(box, rows, name, value, color, text = (r) => num.format(value(r))) {
   if (!rows.length) return empty(box, 'Nothing yet.');
   box.replaceChildren();
   const W = Math.max(280, box.clientWidth), rowH = 32, H = rows.length * rowH;
   const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'font-family': 'Overpass, sans-serif' });
   box.appendChild(svg);
   const left = Math.max(...rows.map((r) => textWidth(svg, name(r), 13))) + 12;
-  const right = textWidth(svg, num.format(Math.max(...rows.map(value))), 13) + 12;
+  const right = Math.max(...rows.map((r) => textWidth(svg, text(r), 13))) + 12;
   const max = Math.max(1, ...rows.map(value));
   rows.forEach((r, i) => {
     const yy = i * rowH;
     const w = Math.max(3, (value(r) / max) * (W - left - right));
     svg.appendChild(el('text', { x: left - 10, y: yy + 20, 'text-anchor': 'end', 'font-size': 13, fill: 'var(--text)' }, name(r)));
     svg.appendChild(el('rect', { x: left, y: yy + 7, width: w, height: 18, rx: 5, fill: color(r) }));
-    svg.appendChild(el('text', { x: left + w + 8, y: yy + 20, 'font-size': 13, 'font-weight': 700, fill: 'var(--muted)' }, num.format(value(r))));
+    svg.appendChild(el('text', { x: left + w + 8, y: yy + 20, 'font-size': 13, 'font-weight': 700, fill: 'var(--muted)' }, text(r)));
   });
 }
 
@@ -565,58 +627,228 @@ function listRows(box, rows, emptyText) {
   for (const [label, value] of rows) {
     const li = document.createElement('li');
     const span = document.createElement('span'); span.textContent = label;
-    const b = document.createElement('b'); b.textContent = num.format(value);
+    const b = document.createElement('b'); b.textContent = typeof value === 'number' ? num.format(value) : value;
     li.append(span, b); box.appendChild(li);
   }
 }
 
+// Table rows: each cell a text, numbers (class n) on the right.
+function tableRows(tbody, rows, emptyText, cols) {
+  tbody.replaceChildren();
+  if (!rows.length) { const td = tbody.insertRow().insertCell(); td.colSpan = cols; td.className = 'empty'; td.textContent = emptyText; return; }
+  for (const cells of rows) {
+    const tr = tbody.insertRow();
+    for (const [t, cls, title] of cells) {
+      const td = tr.insertCell(); td.textContent = t;
+      if (cls) td.className = cls;
+      if (title) td.title = title;
+    }
+  }
+}
+
+// A KPI's line under the number: the text, and how it went against the 7
+// days before.
+function versus(box, now, before, text) {
+  box.replaceChildren();
+  if (before != null) {
+    const d = now - before;
+    const s = document.createElement('span');
+    s.className = d > 0 ? 'up' : d < 0 ? 'down' : '';
+    s.textContent = d > 0 ? `▲ ${num.format(d)}` : d < 0 ? `▼ ${num.format(-d)}` : '= same';
+    box.append(s, ` vs the 7 days before (${num.format(before)})`);
+  }
+  if (text) box.append(before != null ? ` · ${text}` : text);
+}
+
 function drawStats(s, releases) {
   $('stats-when').textContent = `Updated ${new Date(s.at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}`;
+  const today = s.today;
+
+  // The headline numbers.
+  const w = s.windows.filter(inApp);
+  $('k-week').textContent = num.format(total(w, 'active_7'));
+  versus($('k-week-sub'), total(w, 'active_7'), total(w, 'active_prev_7'), `${num.format(total(w, 'today'))} today`);
+  $('k-new').textContent = num.format(total(w, 'new_7'));
+  versus($('k-new-sub'), total(w, 'new_7'), total(w, 'new_prev_7'));
+  const cohorts = merged(s.cohorts, (c) => c.week, ['installs', 'd1', 'd1_base', 'w1', 'w1_base', 'w2', 'w2_base']).sort((a, b) => a.week.localeCompare(b.week));
+  const [d1, d1b, w1, w1b] = ['d1', 'd1_base', 'w1', 'w1_base'].map((k) => total(cohorts, k));
+  $('k-d1').textContent = share(d1, d1b);
+  $('k-d1-sub').textContent = d1b ? `${num.format(d1)} of ${num.format(d1b)} installs a day or more old` : 'No install old enough yet';
+  $('k-w1').textContent = share(w1, w1b);
+  $('k-w1-sub').textContent = w1b ? `${num.format(w1)} of ${num.format(w1b)} installs a week or more old` : 'No install a week old yet';
+
+  // Each day of the last 30 (since the first counted), those with no one too.
+  const byDay = new Map(merged(s.daily, (d) => d.day, ['active', 'new']).map((d) => [d.day, d]));
+  const counted = s.daily[0]?.day ?? today;
+  const length = Math.min(30, Math.round((Date.parse(today) - Date.parse(counted)) / 864e5) + 1);
+  const daily = Array.from({ length }, (_, i) => {
+    const d = day(today, i - length + 1);
+    const r = byDay.get(d) ?? { active: 0, new: 0 };
+    return { day: d, active: r.active, new: r.new, old: r.active - r.new };
+  });
+  const week = daily.slice(-7, -1);
+  const avg = total(week, 'active') / week.length;
+  $('k-habit').textContent = share(avg, total(w, 'active_7'));
+  $('k-habit-sub').textContent = `On an average day this week, ${avg.toFixed(1)} of the ${num.format(total(w, 'active_7'))} played`;
+  columns($('c-daily'), daily, (d) => shortDay(d.day), [{ key: 'old', color: () => 'var(--faint)' }, { key: 'new', color: () => 'var(--gold)' }],
+    { dim: (d) => d.day === today });
+
+  const cell = (a, b) => (b ? [`${share(a, b)}`, 'n', `${a} of ${b}`] : ['—', 'n']);
+  tableRows($('t-cohorts'), cohorts.slice().reverse().map((c) => [
+    [`Week of ${shortDay(c.week)}`], [num.format(c.installs), 'n'], cell(c.d1, c.d1_base), cell(c.w1, c.w1_base), cell(c.w2, c.w2_base),
+  ]), 'No installs yet.', 5);
+  columns($('c-days'), merged(s.days_played, (d) => d.days, ['installs']).sort((a, b) => a.days - b.days),
+    (d) => (d.days === 1 ? '1 day' : `${d.days} days`), [{ key: 'installs', color: () => 'var(--blue)' }]);
+
+  // The move to GeoTells.
+  const moved = total(s.move.moved, 'n');
+  const g7 = s.move.geosense_7 ?? {};
+  const tells7 = total(s.windows.filter((r) => r.app === 'geotells'), 'active_7');
+  listRows($('l-move'), [
+    ['Moved to GeoTells so far', moved],
+    ['… in the last 7 days', total(s.move.moved.filter((m) => m.day > day(today, -7)), 'n')],
+    ['GeoSense 1.7 and up: can move now', g7.can_move ?? 0],
+    ['Older GeoSense: has to update first', g7.update_first ?? 0],
+    ['GeoTells installs, last 7 days', tells7],
+  ], '');
+  const first = s.move.moved[0]?.day;
+  const movedDays = new Map(s.move.moved.map((m) => [m.day, m.n]));
+  const span = first ? Math.max(1, Math.round((Date.parse(today) - Date.parse(first)) / 864e5) + 1) : 0;
+  columns($('c-moved'), Array.from({ length: Math.min(span, 30) }, (_, i) => {
+    const d = day(today, i - Math.min(span, 30) + 1);
+    return { day: d, n: movedDays.get(d) ?? 0 };
+  }), (d) => shortDay(d.day), [{ key: 'n', color: () => 'var(--gold)' }], { dim: (d) => d.day === today });
+
+  drawLearning(s);
+  drawHabits(s);
+  drawDownloads(s, releases);
+
+  // Day to day.
+  const r = s.reports;
+  listRows($('l-reports'), [
+    ['Open now (new or reviewing)', r.open],
+    ['Oldest open', r.oldest_open ? when(r.oldest_open) : '—'],
+    ['Days to close one (median)', r.days_to_close == null ? '—' : Number(r.days_to_close).toFixed(1)],
+  ], '');
+  columns($('c-reports'), r.weeks, (x) => shortDay(x.week), [{ key: 'received', color: () => 'var(--blue)' }]);
+  const reach = merged(s.reach, () => 'all', ['push', 'reminders', 'es', 'en'])[0] ?? { push: 0, reminders: 0, es: 0, en: 0 };
+  const active30 = total(w, 'active_30');
+  listRows($('l-counts'), [
+    ['Phones with push notifications', reach.push],
+    ['With reminders', reach.reminders],
+    ['… in Spanish', reach.es],
+    ['… in English', reach.en],
+    ['Reminders, of the installs of the last 30 days', share(reach.reminders, active30)],
+  ], '');
+  listRows($('l-tests'), s.tests.map((t) => [`${t.kind === 'emulator' ? 'Emulator' : 'Computer build'} · ${t.version}`, t.installs]),
+    'No test installs in the last 30 days.');
+}
+
+function drawLearning(s) {
+  const p = merged(s.players, () => 'all', ['copies', 'played', 'placement', 'alive', 'ended', 'lessons'])[0]
+    ?? { copies: 0, played: 0, placement: 0, lessons: 0 };
+  const skills = merged(s.skills, (k) => k.skill, ['players', 'mastered', 'correct', 'wrong']).sort((a, b) => lessonOrder(a.skill) - lessonOrder(b.skill));
+  const box = $('k-learning');
+  box.replaceChildren();
+  for (const [label, value, sub] of [
+    ['Players with a copy', num.format(p.played), `${num.format(p.copies - p.played)} more never finished a lesson`],
+    ['Lessons finished', num.format(p.lessons), p.played ? `${num.format(Math.round(p.lessons / p.played))} per player` : ''],
+    ['Lessons mastered whole', num.format(total(skills, 'mastered')), 'Every subject in them'],
+    ['Took the placement exam', share(p.placement, p.played), `${num.format(p.placement)} players`],
+  ]) {
+    const k = document.createElement('div');
+    k.className = 'kpi';
+    for (const [cls, t] of [['label', label], ['value', value], ['sub', sub]]) {
+      const span = document.createElement('span'); span.className = cls; span.textContent = t; k.append(span);
+    }
+    box.append(k);
+  }
+
+  // Players who reached each level: everyone at that level or above.
+  const levels = merged(s.levels, (l) => l.level, ['players']);
+  const top = Math.max(0, ...levels.map((l) => l.level));
+  const reached = Array.from({ length: top }, (_, i) => ({ level: i + 1, players: total(levels.filter((l) => l.level > i), 'players') }));
+  const played = total(levels, 'players');
+  bars($('c-funnel'), reached, (r) => `L${r.level}`, (r) => r.players, () => 'var(--gold)',
+    (r) => `${num.format(r.players)} · ${share(r.players, played)}`);
+
+  const BUCKETS = { 1: '1–9', 10: '10–24', 25: '25–49', 50: '50–99', 100: '100–249', 250: '250–499', 500: '500+' };
+  const done = new Map(merged(s.lessons_done, (b) => b.from, ['players']).map((b) => [b.from, b.players]));
+  columns($('c-lessons'), played ? Object.entries(BUCKETS).map(([from, name]) => ({ name, players: done.get(Number(from)) ?? 0 })) : [],
+    (b) => b.name, [{ key: 'players', color: () => 'var(--blue)' }]);
+
+  tableRows($('t-skills'), skills.map((k) => [
+    [lessonName(k.skill)], [LESSONS.find(([key]) => key === k.skill)?.[2] ?? '—'], [num.format(k.players), 'n'],
+    [share(k.correct, k.correct + k.wrong), 'n'], [num.format(k.correct + k.wrong), 'n'], [num.format(k.mastered), 'n'],
+  ]), 'No lessons played yet.', 6);
+
+  // The most missed, for the lesson chosen.
+  const select = $('hardest-skill');
+  const have = [...new Set(s.hardest.map((h) => h.skill))].sort((a, b) => lessonOrder(a) - lessonOrder(b));
+  const chosen = have.includes(select.value) ? select.value : have[0];
+  select.replaceChildren(...have.map((k) => { const o = document.createElement('option'); o.value = k; o.textContent = lessonName(k); o.selected = k === chosen; return o; }));
+  tableRows($('t-hardest'), s.hardest.filter((h) => h.skill === chosen).map((h) => [
+    [subjectName(h.skill, h.subject)], [share(h.wrong, h.correct + h.wrong), 'n', `${h.wrong} wrong`],
+    [num.format(h.correct + h.wrong), 'n'], [num.format(h.players), 'n'],
+  ]), 'Nothing missed often yet.', 4);
+}
+
+$('hardest-skill').addEventListener('change', () => { if (lastStats) drawLearning(lastStats[0]); });
+
+function drawHabits(s) {
+  const p = merged(s.players, () => 'all', ['alive', 'ended'])[0] ?? { alive: 0, ended: 0 };
+  const best = Math.max(0, ...s.players.filter(inApp).map((x) => x.best ?? 0));
+  listRows($('l-streaks'), [['Streaks going', p.alive], ['Ended (the copy still shows them)', p.ended], ['Longest ever', best ? `${num.format(best)} days` : '—']], '');
+  columns($('c-streaks'), merged(s.streaks, (x) => x.streak, ['players']).sort((a, b) => a.streak - b.streak),
+    (d) => `${d.streak}`, [{ key: 'players', color: () => 'var(--blue)' }]);
+
+  tableRows($('t-challenge'), s.challenge.slice().reverse().map((c) => [
+    [`#${c.number}`], [num.format(c.players), 'n'], [share(c.players, c.active), 'n', `${c.players} of ${c.active} active that day`],
+    [Number(c.average).toFixed(1), 'n'], [num.format(c.perfect), 'n'], [`${Number(c.seconds).toFixed(0)} s`, 'n'],
+  ]), 'No results yet.', 6);
+
+  // "flag:LB:LB": the lesson, then what was asked (the last part is the answer).
+  const question = (key) => {
+    const [skill, ...rest] = key.split(':');
+    const asked = rest.length > 1 ? rest.slice(0, -1) : rest;
+    return `${lessonName(skill)} · ${asked.map((a) => subjectName(skill, a)).join(' · ')}`;
+  };
+  const hard = s.challenge_questions.filter((q) => q.players >= 2 && q.right < q.players)
+    .sort((a, b) => a.right / a.players - b.right / b.players || b.players - a.players || b.number - a.number).slice(0, 8);
+  tableRows($('t-questions'), hard.map((q) => [
+    [`#${q.number}`], [question(q.key), '', q.key], [`${q.players - q.right} of ${q.players}`, 'n'],
+  ]), 'No question missed by most yet.', 3);
+
+  tableRows($('t-words'), s.words.slice(-14).reverse().map((x) => [
+    [`#${x.number}`], [num.format(x.players), 'n'], [share(x.finished, x.players), 'n', `${x.finished} of ${x.players}`],
+    [x.guesses == null ? '—' : Number(x.guesses).toFixed(1), 'n'],
+  ]), 'No words played yet.', 4);
+}
+
+function drawDownloads(s, releases) {
   const players = (d) => ({ ...d, downloads: Math.max(0, d.downloads - (OWN_DOWNLOADS[d.version] ?? 0)) });
-  releases = releases.map(players);
-  const history = s.downloads.map((d) => ({ ...players(d), live: false }));
+  const ofApp = (d) => inApp({ app: appOfVersion(d.version) });
+  releases = releases.map(players).filter(ofApp);
+  const history = s.downloads.map((d) => ({ ...players(d), live: false })).filter(ofApp);
   for (const release of releases) {
     if (!history.some((d) => d.version === release.version)) history.push({ ...release, live: true });
   }
   history.sort((a, b) => a.published.localeCompare(b.published) || a.version.localeCompare(b.version, 'en', { numeric: true }));
-  $('k-downloads').textContent = num.format(history.reduce((n, d) => n + d.downloads, 0));
+  $('k-downloads').textContent = `· ${num.format(total(history, 'downloads'))}`;
   $('k-downloads-sub').textContent = releases.length
-    ? `${releases.map((r) => `${num.format(r.downloads)} on ${r.version}`).join(', ')}, the sites' current versions`
-    : 'Closed versions only: GitHub did not answer';
-  $('k-today').textContent = num.format(s.summary.today);
-  $('k-week').textContent = num.format(s.summary.last_7_days);
-  $('k-week-sub').textContent = `${num.format(s.summary.last_30_days)} in the last 30 days`;
-  const ret = s.returning;
-  $('k-return').textContent = ret.installs ? pct.format(ret.returned / ret.installs) : '—';
-  $('k-return-sub').textContent = `${num.format(ret.returned)} of ${num.format(ret.installs)} installs played on 2+ days`;
-
-  const daily = s.daily.slice(-30).map((d) => ({ ...d, old: d.active - d.new }));
-  columns($('c-daily'), daily, (d) => shortDay(d.day), [{ key: 'old', color: () => 'var(--faint)' }, { key: 'new', color: () => 'var(--gold)' }]);
-  columns($('c-days'), s.days_played, (d) => (d.days === 1 ? '1 day' : `${d.days} days`), [{ key: 'installs', color: () => 'var(--blue)' }]);
+    ? `From the websites, while each version was the latest. Live now: ${releases.map((r) => `${num.format(r.downloads)} on ${r.version}`).join(', ')}.`
+    : 'From the websites, while each version was the latest. GitHub did not answer: closed versions only.';
   columns($('c-downloads'), history, (d) => d.version, [{ key: 'downloads', color: (d) => (d.live ? 'var(--gold)' : 'var(--faint)') }]);
-  bars($('c-versions'), s.versions, (r) => r.version, (r) => r.installs, versionColor);
-  columns($('c-levels'), s.levels, (d) => `L${d.level}`, [{ key: 'players', color: () => 'var(--gold)' }]);
-  columns($('c-streaks'), s.streaks, (d) => `${d.streak}`, [{ key: 'players', color: () => 'var(--blue)' }]);
 
-  const tbody = $('t-challenge');
-  tbody.replaceChildren();
-  if (!s.challenge.length) { const td = tbody.insertRow().insertCell(); td.colSpan = 5; td.className = 'empty'; td.textContent = 'No results yet.'; }
-  for (const c of s.challenge.slice().reverse()) {
-    const tr = tbody.insertRow();
-    for (const [t, cls] of [[`#${c.number}`], [num.format(c.players), 'n'], [Number(c.average).toFixed(1), 'n'], [num.format(c.perfect), 'n'], [`${Number(c.seconds).toFixed(0)} s`, 'n']]) {
-      const td = tr.insertCell(); td.textContent = t; if (cls) td.className = cls;
-    }
-  }
-  const counts = s.counts;
-  listRows($('l-counts'), [
-    ['Phones with push notifications', counts.push_devices],
-    ['Installs with reminders', counts.reminder_installs],
-    ['… in Spanish', counts.reminders_es],
-    ['… in English', counts.reminders_en],
-    ['Have played the daily challenge', counts.challenge_players],
-    ['Cloud progress copies', counts.backups],
-  ], '');
-  listRows($('l-tests'), s.tests.map((t) => [`${t.kind === 'emulator' ? 'Emulator' : 'Local build'} · ${t.version}`, t.installs]), 'No test installs in the last 30 days.');
+  // Only versions still the latest once days were counted (since the first
+  // day in s.daily): before that, no install was.
+  const firsts = new Map(s.first_versions.map((f) => [f.version, f.installs]));
+  const counted = s.daily[0]?.day ?? s.today;
+  tableRows($('t-convert'), history.filter((d) => d.live || d.replaced >= counted).reverse().map((d) => {
+    const n = firsts.get(d.version) ?? 0;
+    return [[d.live ? `${d.version} (live)` : d.version], [num.format(d.downloads), 'n'], [num.format(n), 'n'], [share(n, d.downloads), 'n']];
+  }), 'No downloads yet.', 4);
+  bars($('c-versions'), s.versions.filter(inApp), (r) => r.version, (r) => r.installs, versionColor);
 }
 
 let resize;

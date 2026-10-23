@@ -17,8 +17,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&display=swap">
 <!-- ?v= changes with every change to them: the site lets browsers keep a file
      10 minutes, and a new version must not wait behind the old one. -->
-<link rel="stylesheet" href="faro.css?v=2026-10-22c">
-<script type="module" src="faro.js?v=2026-10-22c"></script>
+<link rel="stylesheet" href="faro.css?v=2026-10-23a">
+<script type="module" src="faro.js?v=2026-10-23a"></script>
 </head>
 <body>
 <main>
@@ -102,27 +102,80 @@
     </section>
 
     <!-- Stats -->
+    <!-- Stats, most telling first: are people playing and coming back, the
+         move to GeoTells, what they learn, their habits, where the app
+         comes from, and the day to day. -->
     <section id="t-stats" class="tab">
-      <div class="bar"><span class="when" id="stats-when">Loading…</span><button type="button" id="reload-stats">Refresh</button></div>
-      <div class="kpis">
-        <div class="kpi lead"><span class="label">Website downloads</span><span class="value" id="k-downloads">—</span><span class="sub" id="k-downloads-sub">All stable versions</span></div>
-        <div class="kpi"><span class="label">Active today</span><span class="value" id="k-today">—</span><span class="sub">Installs that opened the app (UTC day)</span></div>
-        <div class="kpi"><span class="label">Active last 7 days</span><span class="value" id="k-week">—</span><span class="sub" id="k-week-sub">Each install once</span></div>
-        <div class="kpi"><span class="label">Come back</span><span class="value" id="k-return">—</span><span class="sub" id="k-return-sub">Installs that played on 2+ days</span></div>
+      <div class="bar">
+        <div class="chips" id="stats-app" role="group" aria-label="App">
+          <button type="button" class="chip" data-app="both" aria-pressed="true">Both apps</button>
+          <button type="button" class="chip" data-app="geotells" aria-pressed="false">GeoTells</button>
+          <button type="button" class="chip" data-app="geosense" aria-pressed="false">GeoSense</button>
+        </div>
+        <div class="row"><span class="when" id="stats-when">Loading…</span><button type="button" id="reload-stats">Refresh</button></div>
       </div>
+      <div class="kpis">
+        <div class="kpi lead"><span class="label">Active last 7 days</span><span class="value" id="k-week">—</span><span class="sub" id="k-week-sub"></span></div>
+        <div class="kpi"><span class="label">New last 7 days</span><span class="value" id="k-new">—</span><span class="sub" id="k-new-sub"></span></div>
+        <div class="kpi"><span class="label">Back the next day</span><span class="value" id="k-d1">—</span><span class="sub" id="k-d1-sub"></span></div>
+        <div class="kpi"><span class="label">Back within a week</span><span class="value" id="k-w1">—</span><span class="sub" id="k-w1-sub"></span></div>
+        <div class="kpi"><span class="label">Daily habit</span><span class="value" id="k-habit">—</span><span class="sub" id="k-habit-sub"></span></div>
+      </div>
+
+      <h2>Playing and coming back</h2>
       <div class="grid">
-        <div class="card"><h3>Active installs per day</h3><p class="note">Each install once a day, phones only.</p>
+        <div class="card wide"><h3>Active installs per day</h3><p class="note">Last 30 days, each install once a day (UTC). Today is still going.</p>
           <div class="legend"><span><i class="sw faint"></i>Seen before</span><span><i class="sw gold"></i>New that day</span></div>
           <div class="chart" id="c-daily"></div></div>
+        <div class="card"><h3>Coming back, by week of install</h3><p class="note">Of the installs old enough to know: back the day after the first, on any of the next 7 days, and in their second week.</p>
+          <div class="scroll"><table><thead><tr><th>Installed</th><th class="n">Installs</th><th class="n">Next day</th><th class="n">Week 1</th><th class="n">Week 2</th></tr></thead><tbody id="t-cohorts"></tbody></table></div></div>
         <div class="card"><h3>Days played per install</h3><p class="note">More than one day means they came back.</p><div class="chart" id="c-days"></div></div>
-        <div class="card"><h3>Downloads per stable version</h3><p class="note">From the website, while each version was the latest. The current one is live.</p><div class="chart" id="c-downloads"></div></div>
+      </div>
+
+      <h2>The move to GeoTells</h2>
+      <div class="grid">
+        <div class="card"><h3>Where GeoSense players are</h3><p class="note">Moved: progress taken to GeoTells with the transfer code. The rest are GeoSense installs of the last 7 days.</p><ul class="list" id="l-move"></ul></div>
+        <div class="card"><h3>Moved per day</h3><p class="note">Test installs left out.</p><div class="chart" id="c-moved"></div></div>
+      </div>
+
+      <h2>Learning</h2>
+      <p class="note">From the progress copies in the cloud: one per player, test installs and copies already moved left out. Players who turned the copy off are not here.</p>
+      <div class="kpis small" id="k-learning"></div>
+      <div class="grid">
+        <div class="card"><h3>Levels reached</h3><p class="note">Players who got at least this far, of those who played a lesson. Where the line drops is where they stop.</p><div class="chart" id="c-funnel"></div></div>
+        <div class="card"><h3>Lessons finished</h3><p class="note">Players by lessons finished so far.</p><div class="chart" id="c-lessons"></div></div>
+        <div class="card wide"><h3>Lessons</h3><p class="note">Players who practised each, their answers right, and who mastered every subject in it (counted from GeoSense 1.6.1 and GeoTells).</p>
+          <div class="scroll"><table><thead><tr><th>Lesson</th><th>Opens</th><th class="n">Players</th><th class="n">Right</th><th class="n">Answers</th><th class="n">Mastered</th></tr></thead><tbody id="t-skills"></tbody></table></div></div>
+        <div class="card"><h3>Most missed</h3><p class="note">Both apps. Subjects answered at least 3 times, most wrong first.</p>
+          <select id="hardest-skill" aria-label="Lesson"></select>
+          <div class="scroll"><table><thead><tr><th>Subject</th><th class="n">Wrong</th><th class="n">Answers</th><th class="n">Players</th></tr></thead><tbody id="t-hardest"></tbody></table></div></div>
+      </div>
+
+      <h2>Habits</h2>
+      <div class="grid">
+        <div class="card"><h3>Streaks going now</h3><p class="note">Days in a row. A streak ends after two days without playing; the copy keeps it as it was, so those are left out here.</p>
+          <ul class="list" id="l-streaks"></ul><div class="chart" id="c-streaks"></div></div>
+        <div class="card"><h3>Daily challenge</h3><p class="note">Both apps, real players only. Played: of the installs active that day.</p>
+          <div class="scroll"><table><thead><tr><th>#</th><th class="n">Players</th><th class="n">Played</th><th class="n">Average</th><th class="n">10/10</th><th class="n">Time</th></tr></thead><tbody id="t-challenge"></tbody></table></div></div>
+        <div class="card"><h3>Hardest challenge questions</h3><p class="note">Last 14 challenges, both apps: the questions most got wrong.</p>
+          <div class="scroll"><table><thead><tr><th>#</th><th>Question</th><th class="n">Wrong</th></tr></thead><tbody id="t-questions"></tbody></table></div></div>
+        <div class="card"><h3>Word of the day</h3><p class="note">Both apps, from the copies. Finished: solved or out of tries; guesses of those.</p>
+          <div class="scroll"><table><thead><tr><th>#</th><th class="n">Players</th><th class="n">Finished</th><th class="n">Guesses</th></tr></thead><tbody id="t-words"></tbody></table></div></div>
+      </div>
+
+      <h2>Downloads and versions</h2>
+      <div class="grid">
+        <div class="card"><h3>Website downloads <span class="faint" id="k-downloads"></span></h3><p class="note" id="k-downloads-sub">From the websites, while each version was the latest. The current ones are live.</p><div class="chart" id="c-downloads"></div></div>
+        <div class="card"><h3>Downloads that became players</h3><p class="note">Installs that first opened with each version (counting their days), for its downloads, since days are counted. Over 100% is installs from a beta or another phone's APK.</p>
+          <div class="scroll"><table><thead><tr><th>Version</th><th class="n">Downloads</th><th class="n">Installs</th><th class="n">Share</th></tr></thead><tbody id="t-convert"></tbody></table></div></div>
         <div class="card"><h3>Version in use</h3><p class="note">Last 30 days, the version each install last opened with.</p><div class="chart" id="c-versions"></div></div>
-        <div class="card"><h3>Player levels</h3><p class="note">From cloud progress copies, test builds left out.</p><div class="chart" id="c-levels"></div></div>
-        <div class="card"><h3>Current streaks</h3><p class="note">Days in a row, from the same copies.</p><div class="chart" id="c-streaks"></div></div>
-        <div class="card"><h3>Daily challenge results</h3><p class="note">Real players only, scores out of 10.</p>
-          <div class="scroll"><table><thead><tr><th>Challenge</th><th class="n">Players</th><th class="n">Average</th><th class="n">Perfect 10s</th><th class="n">Avg. time</th></tr></thead><tbody id="t-challenge"></tbody></table></div></div>
-        <div class="card"><h3>Reminders and backups</h3><p class="note">Installs on the server right now.</p><ul class="list" id="l-counts"></ul></div>
-        <div class="card"><h3>Emulators and local builds</h3><p class="note">Last 30 days. Kept out of every count above.</p><ul class="list" id="l-tests"></ul></div>
+      </div>
+
+      <h2>Day to day</h2>
+      <div class="grid">
+        <div class="card"><h3>Reports</h3><p class="note">Both apps. Received per week, last 12 weeks.</p><ul class="list" id="l-reports"></ul><div class="chart" id="c-reports"></div></div>
+        <div class="card"><h3>Reminders</h3><p class="note">Phones on the server right now, test installs left out.</p><ul class="list" id="l-counts"></ul></div>
+        <div class="card"><h3>Emulators and computer builds</h3><p class="note">Last 30 days, both apps. Kept out of every count above.</p><ul class="list" id="l-tests"></ul></div>
       </div>
     </section>
 
