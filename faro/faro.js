@@ -416,12 +416,39 @@ function drawScenes(scenes) {
     viewer.className = 'viewer';
     viewer._scene = sc;
     watcher.observe(viewer);
+    // A sign's text: veiled round it, as the question shows it.
+    const frame = document.createElement('div');
+    frame.className = 'viewer-frame';
+    frame.append(viewer);
+    const close = textCloseUp(sc);
+    if (close) {
+      const veil = document.createElement('div');
+      veil.className = 'veil';
+      veil.style.setProperty('--w', close.width);
+      veil.style.setProperty('--h', close.height);
+      frame.append(veil);
+    }
+    const buttons = document.createElement('div');
+    buttons.className = 'row';
     const reset = document.createElement('button');
     reset.type = 'button';
     reset.textContent = 'Reset view';
     reset.addEventListener('click', () => viewer._reset?.());
+    buttons.append(reset);
+    if (close) {
+      // The answer: the veil off and the camera back to the whole street.
+      const flip = document.createElement('button');
+      flip.type = 'button';
+      flip.textContent = 'Show answer';
+      flip.addEventListener('click', () => {
+        const answered = frame.classList.toggle('answered');
+        flip.textContent = answered ? 'Show question' : 'Show answer';
+        viewer._show?.(answered);
+      });
+      buttons.append(flip);
+    }
     const text = (cls, t) => { const p = document.createElement('p'); p.className = cls; p.textContent = t; return p; };
-    card.append(head, viewer, reset, text('prompt', sc.prompt), text('answer', `Answer: ${sc.answer}`), text('note', sc.why));
+    card.append(head, frame, buttons, text('prompt', sc.prompt), text('answer', `Answer: ${sc.answer}`), text('note', sc.why));
     if (sc.note) card.append(text('error', `Note: ${sc.note}`));
     const vote = document.createElement('div');
     vote.className = 'vote';
@@ -454,18 +481,44 @@ function drawScenes(scenes) {
   });
 }
 
-// The scene as the app frames it: its heading, pitch and field of view.
+// Where a sign's text is seen from in the question, as the app's
+// StreetScene._textCloseUp works it out: straight at it, until it is 60% of
+// the view's width, never more than 4 times closer. Its size there, as
+// shares of the view. Null for other scenes, or a text already big enough.
+function textCloseUp(sc) {
+  const at = sc.scene?.textAt;
+  if (!at) return null;
+  const [x, y, w, h] = at;
+  const rad = Math.PI / 180;
+  const closer = Math.min(0.6 / w, 4);
+  if (closer <= 1) return { heading: sc.heading, pitch: sc.pitch, fov: sc.fov, width: w, height: h };
+  const half = Math.tan((sc.fov * rad) / 2);
+  const right = (x - 0.5) * 2 * half, up = (0.5 - y) * 2 * half * 0.75;
+  return {
+    heading: (sc.heading + Math.atan(right / Math.cos(sc.pitch * rad)) / rad + 360) % 360,
+    pitch: sc.pitch + Math.atan(up) / rad,
+    fov: (2 * Math.atan(half / closer)) / rad,
+    width: w * closer,
+    height: h * closer,
+  };
+}
+
+// The scene as the app frames it: its heading, pitch and field of view; a
+// sign's text first from closer, as the question shows it.
 async function showPanorama(el, sc) {
   try {
     const gm = await loadMaps();
-    const pov = { heading: sc.heading, pitch: sc.pitch };
-    const zoom = Math.log2(180 / sc.fov);
+    const whole = { pov: { heading: sc.heading, pitch: sc.pitch }, zoom: Math.log2(180 / sc.fov) };
+    const close = textCloseUp(sc);
+    const asked = close ? { pov: { heading: close.heading, pitch: close.pitch }, zoom: Math.log2(180 / close.fov) } : whole;
+    let shown = asked;
     const pano = new gm.StreetViewPanorama(el, {
-      pano: sc.pano, pov, zoom,
+      pano: sc.pano, pov: asked.pov, zoom: asked.zoom,
       disableDefaultUI: true, clickToGo: false, linksControl: false, showRoadLabels: false,
       addressControl: false, motionTracking: false, motionTrackingControl: false, fullscreenControl: true,
     });
-    el._reset = () => { pano.setPov(pov); pano.setZoom(zoom); };
+    el._reset = () => { pano.setPov(shown.pov); pano.setZoom(shown.zoom); };
+    el._show = (answered) => { shown = answered ? whole : asked; el._reset(); };
   } catch (e) {
     el.textContent = `Could not show it: ${e.message}`;
   }

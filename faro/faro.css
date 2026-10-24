@@ -126,6 +126,18 @@ th.n, td.n { text-align: right; }
 .scene.no { border-color: var(--bad); }
 .scene .num { background: var(--gold); color: #0b1426; font-weight: 800; border-radius: 999px; min-width: 26px; height: 26px; display: inline-grid; place-items: center; }
 .viewer { width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; background: var(--raised); overflow: hidden; }
+/* A sign's text as the alphabets question shows it: the rest of the street
+   nearly dark (the app's 0xEB veil), a soft window on the text, a little
+   roomier than it (the app's _TextVeil). The view is 4:3, so its height is
+   75cqw. */
+.viewer-frame { position: relative; container-type: inline-size; border-radius: 12px; overflow: hidden; }
+.viewer-frame .veil {
+  position: absolute; left: 50%; top: 50%; pointer-events: none; transition: opacity .4s;
+  width: calc(var(--w) * 100cqw + var(--h) * 37.5cqw); height: calc(var(--h) * 105cqw);
+  transform: translate(-50%, -50%); border-radius: calc(var(--h) * 22cqw);
+  box-shadow: 0 0 calc(var(--h) * 27cqw) 200cqw rgba(11, 19, 38, .92);
+}
+.viewer-frame.answered .veil { opacity: 0; }
 .scene .prompt { font-weight: 700; margin: 0; }
 .scene .answer { margin: 0; }
 .vote { display: flex; gap: 8px; }
