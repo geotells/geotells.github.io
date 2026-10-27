@@ -435,6 +435,29 @@ function drawScenes(scenes) {
     reset.textContent = 'Reset view';
     reset.addEventListener('click', () => viewer._reset?.());
     buttons.append(reset);
+    // Moved, turned or zoomed to better it: this view is the one the app
+    // will use (a sign's text keeps its framing: its place in it is measured).
+    if (!close) {
+      const keep = document.createElement('button');
+      keep.type = 'button';
+      keep.textContent = 'Use this view';
+      keep.disabled = true;
+      viewer._changed = (changed) => { keep.disabled = !changed; keep.textContent = 'Use this view'; };
+      keep.addEventListener('click', async () => {
+        const v = viewer._view?.();
+        if (!v) return;
+        try {
+          await call('admin_set_scene_view', { p_id: sc.id, p_pano: v.pano, p_heading: v.heading, p_pitch: v.pitch, p_fov: v.fov });
+          Object.assign(sc, v);
+          viewer._kept?.(v);
+          keep.disabled = true;
+          keep.textContent = 'View saved ✔';
+        } catch (e) {
+          panelError(e);
+        }
+      });
+      buttons.append(keep);
+    }
     if (close) {
       // The answer: the veil off and the camera back to the whole street.
       const flip = document.createElement('button');
@@ -512,13 +535,32 @@ async function showPanorama(el, sc) {
     const close = textCloseUp(sc);
     const asked = close ? { pov: { heading: close.heading, pitch: close.pitch }, zoom: Math.log2(180 / close.fov) } : whole;
     let shown = asked;
+    // Free to move along the road, turn and zoom, to find a better view.
+    const free = !close;
     const pano = new gm.StreetViewPanorama(el, {
       pano: sc.pano, pov: asked.pov, zoom: asked.zoom,
-      disableDefaultUI: true, clickToGo: false, linksControl: false, showRoadLabels: false,
+      disableDefaultUI: true, clickToGo: free, linksControl: free, zoomControl: free, showRoadLabels: false,
       addressControl: false, motionTracking: false, motionTrackingControl: false, fullscreenControl: true,
     });
-    el._reset = () => { pano.setPov(shown.pov); pano.setZoom(shown.zoom); };
+    let home = sc.pano;
+    el._reset = () => { if (pano.getPano() !== home) pano.setPano(home); pano.setPov(shown.pov); pano.setZoom(shown.zoom); };
     el._show = (answered) => { shown = answered ? whole : asked; el._reset(); };
+    const round = (v) => Math.round(v * 10) / 10;
+    el._view = () => {
+      const pov = pano.getPov();
+      return {
+        pano: pano.getPano(),
+        heading: round((pov.heading % 360 + 360) % 360),
+        pitch: round(pov.pitch),
+        fov: round(Math.min(120, 180 / 2 ** pano.getZoom())),
+      };
+    };
+    el._kept = (v) => { home = v.pano; shown = { pov: { heading: v.heading, pitch: v.pitch }, zoom: Math.log2(180 / v.fov) }; };
+    const changed = () => {
+      const v = el._view(), z = shown.zoom;
+      el._changed?.(v.pano !== home || Math.abs(v.heading - shown.pov.heading) > 0.5 || Math.abs(v.pitch - shown.pov.pitch) > 0.5 || Math.abs(pano.getZoom() - z) > 0.05);
+    };
+    for (const ev of ['pano_changed', 'pov_changed', 'zoom_changed']) pano.addListener(ev, changed);
   } catch (e) {
     el.textContent = `Could not show it: ${e.message}`;
   }
@@ -551,7 +593,8 @@ const LESSONS = [
   ['hemisphere', 'Hemispheres', 'L1'], ['continent', 'Continents', 'L1'], ['map', 'Find the country', 'L1'],
   ['flag', 'Flags', 'L2'], ['plate', 'Plates', 'L3'], ['driving_side', 'Driving side', 'L4'], ['coverage', 'Coverage', 'L5'],
   ['capital', 'Capitals', 'L6'], ['neighbours', 'Neighbors', 'L7'], ['alphabet', 'Alphabets', 'L8'],
-  ['latin_letters', 'Latin letters', 'Alphabets 1'], ['lookalike', 'Look-alike scripts', 'Alphabets 2'],
+  ['latin_letters', 'Latin letters', 'Alphabets 1'], ['one_country', 'One letter, one country', 'Alphabets 2'],
+  ['lookalike', 'Look-alike scripts', 'Alphabets 3'],
   ['road_lines', 'Road lines', 'L9'], ['language', 'Languages', 'L10'], ['street_names', 'Street names', 'Languages'],
   ['domain', 'Domains', 'L11'], ['coast', 'Coasts', 'L12'], ['city', 'Cities', 'L13'], ['phone', 'Phone codes', 'L14'],
   ['us_states', 'US states', 'L15'], ['ca_provinces', 'Canadian provinces', 'L15'], ['stop_signs', 'Stop signs', 'L16'],
