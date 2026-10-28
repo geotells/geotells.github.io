@@ -796,6 +796,22 @@ function drawStats(s, releases) {
   columns($('c-days'), merged(s.days_played, (d) => d.days, ['installs']).sort((a, b) => a.days - b.days),
     (d) => (d.days === 1 ? '1 day' : `${d.days} days`), [{ key: 'installs', color: () => 'var(--blue)' }]);
 
+  // The accounts (GeoTells only, so the app chips leave them as they are).
+  const acc = s.accounts ?? { total: 0, daily: [], active_30: 0, active_30_with_account: 0, gifts: [] };
+  listRows($('l-accounts'), [
+    ['Accounts so far', acc.total],
+    ['… new in the last 7 days', total(acc.daily.filter((a) => a.day > day(today, -7)), 'new')],
+    ['Active installs, last 30 days', acc.active_30],
+    ['… with an account', `${num.format(acc.active_30_with_account)} (${share(acc.active_30_with_account, acc.active_30)})`],
+  ], '');
+  const accDays = new Map(acc.daily.map((a) => [a.day, a.new]));
+  columns($('c-accounts'), Array.from({ length: 30 }, (_, i) => {
+    const d = day(today, i - 29);
+    return { day: d, n: accDays.get(d) ?? 0 };
+  }), (d) => shortDay(d.day), [{ key: 'n', color: () => 'var(--gold)' }], { dim: (d) => d.day === today });
+  const where = { ask: 'Asked after a level or streak', result: 'Under a lesson result', home: 'Home card', settings: 'Settings', welcome: 'Welcome tour' };
+  listRows($('l-gifts'), acc.gifts.map((g) => [where[g.from] ?? 'Before it was counted', g.n]), 'No gifts yet.');
+
   // The move to GeoTells.
   const moved = total(s.move.moved, 'n');
   const g7 = s.move.geosense_7 ?? {};

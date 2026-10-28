@@ -18,7 +18,7 @@
 <!-- ?v= changes with every change to them: the site lets browsers keep a file
      10 minutes, and a new version must not wait behind the old one. -->
 <link rel="stylesheet" href="faro.css?v=2026-10-27a">
-<script type="module" src="faro.js?v=2026-10-27a"></script>
+<script type="module" src="faro.js?v=2026-10-28a"></script>
 </head>
 <body>
 <main>
@@ -130,6 +130,13 @@
         <div class="card"><h3>Coming back, by week of install</h3><p class="note">Of the installs old enough to know: back the day after the first, on any of the next 7 days, and in their second week.</p>
           <div class="scroll"><table><thead><tr><th>Installed</th><th class="n">Installs</th><th class="n">Next day</th><th class="n">Week 1</th><th class="n">Week 2</th></tr></thead><tbody id="t-cohorts"></tbody></table></div></div>
         <div class="card"><h3>Days played per install</h3><p class="note">More than one day means they came back.</p><div class="chart" id="c-days"></div></div>
+      </div>
+
+      <h2>Accounts</h2>
+      <div class="grid">
+        <div class="card"><h3>Players with a Google account</h3><p class="note">GeoTells only. Admins and test installs left out. Active: installs that counted a day played in the last 30 days.</p><ul class="list" id="l-accounts"></ul></div>
+        <div class="card"><h3>New accounts per day</h3><p class="note">The day the Google account was linked, last 30 days.</p><div class="chart" id="c-accounts"></div></div>
+        <div class="card"><h3>Gifts for signing in, by where</h3><p class="note">Asked after a level or a streak, under a lesson's result, on home, in Settings, in the welcome tour.</p><ul class="list" id="l-gifts"></ul></div>
       </div>
 
       <h2>The move to GeoTells</h2>
