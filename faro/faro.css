@@ -88,6 +88,8 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color:
 .pill.reviewing { border-color: var(--blue); color: var(--blue); }
 .pill.fixed { border-color: var(--ok); color: var(--ok); }
 .pill.dismissed { color: var(--faint); }
+.pill.ignored { color: var(--faint); }
+.trace { margin: 0; max-height: 260px; overflow: auto; font-size: 12px; line-height: 1.45; white-space: pre; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 .empty { color: var(--muted); font-size: 14px; padding: 12px 0; }
 
 /* Stats. */

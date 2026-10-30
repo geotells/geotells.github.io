@@ -17,8 +17,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&display=swap">
 <!-- ?v= changes with every change to them: the site lets browsers keep a file
      10 minutes, and a new version must not wait behind the old one. -->
-<link rel="stylesheet" href="faro.css?v=2026-10-27a">
-<script type="module" src="faro.js?v=2026-10-28a"></script>
+<link rel="stylesheet" href="faro.css?v=2026-10-30a">
+<script type="module" src="faro.js?v=2026-10-30a"></script>
 </head>
 <body>
 <main>
@@ -76,6 +76,7 @@
       <button type="button" role="tab" data-tab="stats" aria-selected="true">Stats</button>
       <button type="button" role="tab" data-tab="reports">Reports <span class="badge" id="new-count" hidden></span></button>
       <button type="button" role="tab" data-tab="scenes">Scenes <span class="badge" id="scene-count" hidden></span></button>
+      <button type="button" role="tab" data-tab="crashes">Crashes <span class="badge" id="crash-count" hidden></span></button>
       <button type="button" role="tab" data-tab="versions">Versions</button>
       <button type="button" role="tab" data-tab="settings">Settings</button>
     </nav>
@@ -89,6 +90,16 @@
         <button type="button" id="reload-reports">Refresh</button>
       </div>
       <div id="report-list" class="stack"></div>
+    </section>
+
+    <!-- Crashes: the same error from the same place, grouped -->
+    <section id="t-crashes" class="tab" hidden>
+      <div class="bar">
+        <div class="chips" id="crash-filter"></div>
+        <button type="button" id="reload-crashes">Refresh</button>
+      </div>
+      <p class="note">Errors the app did not expect, sent by builds from CI (betas and releases). Traces are obfuscated: Copy trace, then <code>dart run tool/symbolize_crash.dart</code> reads it. Kept 90 days. A fixed group opens again if it comes back in that version or a later one.</p>
+      <div id="crash-list" class="stack"></div>
     </section>
 
     <!-- Scenes waiting for approval -->
@@ -269,6 +280,36 @@
         </label>
         <p class="error" hidden></p>
         <div class="row"><button class="primary" type="submit">Save</button><span class="saved note" hidden>Saved</span></div>
+      </form>
+    </div>
+  </article>
+</template>
+
+<!-- One crash group, filled per group. -->
+<template id="tpl-crash">
+  <article class="card group">
+    <button type="button" class="group-head">
+      <span class="group-title"></span>
+      <span class="group-meta"></span>
+    </button>
+    <div class="group-body" hidden>
+      <div class="reports"></div>
+      <form class="stack edit">
+        <div class="row">
+          <label>Status
+            <select name="status">
+              <option value="new">New</option>
+              <option value="fixed">Fixed</option>
+              <option value="ignored">Ignored</option>
+            </select>
+          </label>
+          <label class="fixed-in">Fixed in <input name="fixed_in" placeholder="2.5.0 or 2.5.0-beta.214" pattern="\d+\.\d+\.\d+(-beta\.\d+)?"></label>
+        </div>
+        <label>Note <span class="faint">(only for you)</span>
+          <textarea name="note" rows="2" maxlength="2000"></textarea>
+        </label>
+        <p class="error" hidden></p>
+        <div class="row"><button class="primary" type="submit">Save</button></div>
       </form>
     </div>
   </article>

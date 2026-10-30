@@ -141,8 +141,8 @@ async function enterPanel() {
   $('account').textContent = `Signed in as ${data.user?.email ?? 'unknown'}.`;
   show('v-panel');
   openTab(location.hash.slice(1) || 'stats');
-  // The new reports and scenes on their tabs' badges, whichever tab opened.
-  for (const load of [loadReports, loadScenes]) load().catch(() => {});
+  // The new reports, scenes and crashes on their tabs' badges, whichever tab opened.
+  for (const load of [loadReports, loadScenes, loadCrashes]) load().catch(() => {});
 }
 
 const loaded = {};
@@ -152,8 +152,8 @@ function openTab(name) {
   for (const t of document.querySelectorAll('.tab')) t.hidden = t.id !== `t-${name}`;
   history.replaceState(null, '', `#${name}`);
   say($('panel-error'));
-  const load = { reports: loadReports, scenes: loadScenes, stats: loadStats, versions: loadVersions, settings: loadSettings }[name];
-  if (name === 'reports' || name === 'scenes' || !loaded[name]) load().then(() => { loaded[name] = true; }, panelError);
+  const load = { reports: loadReports, scenes: loadScenes, crashes: loadCrashes, stats: loadStats, versions: loadVersions, settings: loadSettings }[name];
+  if (name === 'reports' || name === 'scenes' || name === 'crashes' || !loaded[name]) load().then(() => { loaded[name] = true; }, panelError);
 }
 
 for (const b of document.querySelectorAll('[data-tab]')) b.addEventListener('click', () => openTab(b.dataset.tab));
@@ -341,6 +341,157 @@ function drawReport(r) {
 setInterval(() => {
   if (document.visibilityState === 'visible' && !$('v-panel').hidden && !$('t-reports').hidden) loadReports().catch(() => {});
 }, 2 * 60 * 1000);
+
+// ---- Crashes ---------------------------------------------------------
+
+const CRASH_STATUSES = [['new', 'New'], ['fixed', 'Fixed'], ['ignored', 'Ignored'], ['all', 'All']];
+const CRASH_KINDS = { flutter: 'Flutter', uncaught: 'Uncaught', startup: 'Startup' };
+let crashFilter = 'new';
+let lastCrashes = { counts: {}, groups: [] };
+const openCrashes = new Set();
+
+async function loadCrashes() {
+  lastCrashes = await call('admin_crashes', { p_status: crashFilter === 'all' ? null : crashFilter });
+  drawCrashes();
+}
+
+$('reload-crashes').addEventListener('click', () => reload(loadCrashes));
+
+function drawCrashes() {
+  const counts = lastCrashes.counts || {};
+  const all = Object.values(counts).reduce((a, b) => a + b, 0);
+  const chips = $('crash-filter');
+  chips.replaceChildren();
+  for (const [key, label] of CRASH_STATUSES) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip';
+    chip.setAttribute('aria-pressed', String(crashFilter === key));
+    chip.textContent = `${label} ${num.format(key === 'all' ? all : counts[key] ?? 0)}`;
+    chip.addEventListener('click', () => { crashFilter = key; reload(loadCrashes); });
+    chips.appendChild(chip);
+  }
+  $('crash-count').hidden = !counts.new;
+  $('crash-count').textContent = num.format(counts.new ?? 0);
+
+  const box = $('crash-list');
+  box.replaceChildren();
+  if (!lastCrashes.groups.length) {
+    const p = document.createElement('p');
+    p.className = 'empty';
+    p.textContent = crashFilter === 'new' ? 'No new crashes.' : 'Nothing here.';
+    return box.appendChild(p);
+  }
+  for (const g of lastCrashes.groups) box.appendChild(drawCrashGroup(g));
+}
+
+function drawCrashGroup(g) {
+  const node = $('tpl-crash').content.firstElementChild.cloneNode(true);
+  const latest = g.crashes[0];
+  node.querySelector('.group-title').textContent = latest.error.split('\n')[0] || 'Unknown error';
+  const meta = node.querySelector('.group-meta');
+  meta.append(
+    pill(g.count === 1 ? '1 time' : `${num.format(g.count)} times`),
+    pill(g.installs === 1 ? '1 install' : `${num.format(g.installs)} installs`),
+    pill(CRASH_KINDS[latest.kind] || latest.kind),
+    pill(g.status, g.status),
+  );
+  if (g.last_day) meta.append(pill(`${num.format(g.last_day)} today`, 'new'));
+  meta.append(`${g.versions.slice(0, 3).join(', ')}${g.versions.length > 3 ? '…' : ''} · ${when(g.last)}`);
+
+  const body = node.querySelector('.group-body');
+  const head = node.querySelector('.group-head');
+  body.hidden = !openCrashes.has(g.fingerprint);
+  head.setAttribute('aria-expanded', String(!body.hidden));
+  head.addEventListener('click', () => {
+    body.hidden = !body.hidden;
+    head.setAttribute('aria-expanded', String(!body.hidden));
+    if (body.hidden) openCrashes.delete(g.fingerprint); else openCrashes.add(g.fingerprint);
+  });
+
+  const list = node.querySelector('.reports');
+  const first = document.createElement('p');
+  first.className = 'note';
+  first.textContent = `First seen ${new Date(g.first).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}. The last ${g.crashes.length}:`;
+  list.append(first);
+  for (const c of g.crashes) list.appendChild(drawCrash(c));
+
+  const form = node.querySelector('form');
+  form.status.value = g.status;
+  form.fixed_in.value = g.fixed_in || '';
+  form.note.value = g.note || '';
+  const fixedIn = node.querySelector('.fixed-in');
+  const syncFixed = () => {
+    fixedIn.hidden = form.status.value !== 'fixed';
+    form.fixed_in.required = form.status.value === 'fixed';
+  };
+  syncFixed();
+  form.status.addEventListener('change', syncFixed);
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const error = form.querySelector('.error');
+    say(error);
+    const button = ev.submitter;
+    button.disabled = true;
+    try {
+      await call('admin_update_crashes', {
+        p_fingerprints: [g.fingerprint],
+        p_status: form.status.value,
+        p_fixed_in: form.fixed_in.value.trim() || null,
+        p_note: form.note.value,
+      });
+      openCrashes.add(g.fingerprint);
+      await loadCrashes();
+    } catch (e) {
+      say(error, e.message);
+    } finally {
+      button.disabled = false;
+    }
+  });
+  return node;
+}
+
+function drawCrash(c) {
+  const box = document.createElement('div');
+  box.className = 'report';
+  const top = document.createElement('div');
+  top.className = 'row';
+  const time = document.createElement('span');
+  time.className = 'note';
+  time.textContent = [
+    new Date(c.received_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' }),
+    `${c.app} ${c.app_version}`.trim(), c.platform, c.locale, c.player && `install ${c.player}`,
+  ].filter(Boolean).join(' · ');
+  // What the tool needs: the version on the first line, then the trace.
+  const copy = document.createElement('button');
+  copy.type = 'button';
+  copy.textContent = 'Copy trace';
+  copy.addEventListener('click', async () => {
+    await navigator.clipboard.writeText(`${c.app} ${c.app_version}\n${c.error}\n${c.stack}`);
+    copy.textContent = 'Copied';
+    setTimeout(() => { copy.textContent = 'Copy trace'; }, 1500);
+  });
+  top.append(pill(CRASH_KINDS[c.kind] || c.kind), time, copy);
+  box.append(top);
+
+  const error = document.createElement('div');
+  error.className = 'comment';
+  error.textContent = c.error;
+  box.append(error);
+  if (c.context) {
+    const where = document.createElement('div');
+    where.className = 'note';
+    where.textContent = c.context;
+    box.append(where);
+  }
+  if (c.stack) {
+    const pre = document.createElement('pre');
+    pre.className = 'trace';
+    pre.textContent = c.stack;
+    box.append(pre);
+  }
+  return box;
+}
 
 // ---- Scenes waiting for approval -----------------------------------------
 
@@ -809,7 +960,7 @@ function drawStats(s, releases) {
     const d = day(today, i - 29);
     return { day: d, n: accDays.get(d) ?? 0 };
   }), (d) => shortDay(d.day), [{ key: 'n', color: () => 'var(--gold)' }], { dim: (d) => d.day === today });
-  const where = { ask: 'Asked after a level or streak', result: 'Under a lesson result', home: 'Home card', settings: 'Settings', welcome: 'Welcome tour' };
+  const where = { ask: 'Asked after a level or streak', result: 'Under a lesson result', home: 'Home card', settings: 'Settings', welcome: 'Welcome tour', photo: 'Photo at the top of home' };
   listRows($('l-gifts'), acc.gifts.map((g) => [where[g.from] ?? 'Before it was counted', g.n]), 'No gifts yet.');
 
   // The move to GeoTells.
