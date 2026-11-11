@@ -152,7 +152,7 @@ function openTab(name) {
   for (const t of document.querySelectorAll('.tab')) t.hidden = t.id !== `t-${name}`;
   history.replaceState(null, '', `#${name}`);
   say($('panel-error'));
-  const load = { reports: loadReports, scenes: loadScenes, crashes: loadCrashes, stats: loadStats, versions: loadVersions, settings: loadSettings }[name];
+  const load = { progress: loadProgress, reports: loadReports, scenes: loadScenes, crashes: loadCrashes, stats: loadStats, versions: loadVersions, settings: loadSettings }[name];
   if (name === 'reports' || name === 'scenes' || name === 'crashes' || !loaded[name]) load().then(() => { loaded[name] = true; }, panelError);
 }
 
@@ -749,7 +749,8 @@ const LESSONS = [
   ['road_lines', 'Road lines', 'L9'], ['language', 'Languages', 'L10'], ['street_names', 'Street names', 'Languages'],
   ['domain', 'Domains', 'L11'], ['coast', 'Coasts', 'L12'], ['city', 'Cities', 'L13'], ['phone', 'Phone codes', 'L14'],
   ['us_states', 'US states', 'L15'], ['ca_provinces', 'Canadian provinces', 'L15'], ['stop_signs', 'Stop signs', 'L16'],
-  ['front_plates', 'Front plates', 'L17'],
+  ['front_plates', 'Front plates', 'L17'], ['phone_family', 'Phone zones and families', 'L14'],
+  ['chevrons', 'Chevrons', 'L18'], ['rivers', 'Rivers', 'L19'], ['lakes', 'Lakes', 'Rivers'],
 ];
 const lessonOrder = (key) => { const i = LESSONS.findIndex(([k]) => k === key); return i < 0 ? LESSONS.length : i; };
 const lessonName = (key) => LESSONS.find(([k]) => k === key)?.[1] ?? key;
@@ -799,6 +800,65 @@ async function loadStats() {
   const [stats, releases] = await Promise.all([call('admin_stats'), fetchReleases()]);
   lastStats = [stats, releases];
   drawStats(stats, releases);
+}
+
+// ---- Progress --------------------------------------------------------
+
+// What admin_progression gives (supabase/migrations/20261111120000_lesson_progression.sql):
+// per lesson level, whether players keep mastering things or get stuck.
+
+$('reload-progress').addEventListener('click', () => reload(loadProgress));
+
+let progressDays = (() => { try { return Number(localStorage.getItem('faro-progress-days')) || 30; } catch { return 30; } })();
+for (const chip of document.querySelectorAll('#progress-days .chip')) {
+  chip.setAttribute('aria-pressed', String(Number(chip.dataset.days) === progressDays));
+  chip.addEventListener('click', () => {
+    progressDays = Number(chip.dataset.days);
+    try { localStorage.setItem('faro-progress-days', String(progressDays)); } catch { /* kept for this visit only */ }
+    for (const c of document.querySelectorAll('#progress-days .chip')) c.setAttribute('aria-pressed', String(c === chip));
+    reload(loadProgress);
+  });
+}
+
+async function loadProgress() {
+  $('progress-when').textContent = 'Loading…';
+  const p = await call('admin_progression', { p_days: progressDays });
+  drawProgress(p);
+  $('progress-when').textContent = `Last ${p.days} days · ${new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+function drawProgress(p) {
+  $('progress-n').textContent = p.stuckGames;
+  const lessons = p.lessons.slice().sort((a, b) => lessonOrder(a.lesson) - lessonOrder(b.lesson));
+  const games = total(lessons, 'games'), counted = total(lessons, 'counted_games');
+  const box = $('k-progress');
+  box.replaceChildren();
+  for (const [label, value, sub] of [
+    ['Lesson games', num.format(games), `${num.format(Math.max(0, ...lessons.map((l) => l.players)))} players in the busiest lesson`],
+    ['Moving on', share(total(lessons, 'gain_games'), counted), `of ${num.format(counted)} games with counts mastered something new`],
+    ['Stuck now', num.format(p.stuck.length), `players with ${p.stuckGames}+ games in a row getting nowhere`],
+    ['Reviews that worked', share(total(lessons, 'reviews_worked'), total(lessons, 'reviews')), `of ${num.format(total(lessons, 'reviews'))} shown, ${num.format(total(lessons, 'reviews_looked'))} looked at`],
+  ]) {
+    const k = document.createElement('div');
+    k.className = 'kpi';
+    for (const [cls, t] of [['label', label], ['value', value], ['sub', sub]]) {
+      const s = document.createElement('span'); s.className = cls; s.textContent = t; k.appendChild(s);
+    }
+    box.appendChild(k);
+  }
+  const orDash = (v, f = (x) => num.format(x)) => (v == null ? '—' : f(v));
+  tableRows($('t-lesson-progress'), lessons.map((l) => [
+    [lessonName(l.lesson), '', l.lesson], [num.format(l.players), 'n'], [num.format(l.games), 'n'], [`${l.right_pct}%`, 'n'],
+    [share(l.gain_games, l.counted_games), 'n', `${l.gain_games} of ${l.counted_games} games with counts`],
+    [orDash(l.stuck_now), l.stuck_now > 0 ? 'n warn' : 'n'],
+    [l.dry_median == null ? '—' : `${l.dry_median} · ${l.dry_worst}`, 'n', 'Median · worst, per player'],
+    [orDash(l.first_gain_median), 'n', l.never_gained ? `${l.never_gained} players never mastered one yet` : ''],
+    [l.reviews ? `${l.reviews_worked}/${l.reviews}` : '—', 'n', l.reviews ? `${l.reviews_looked} looked at, ${l.reviews - l.reviews_looked} skipped` : ''],
+  ]), 'No lesson games yet.', 9);
+  tableRows($('t-stuck'), p.stuck.map((s) => [
+    [s.player], [lessonName(s.lesson), '', s.lesson], [num.format(s.games), 'n'], [`${s.right_pct}%`, 'n', `Last ${p.stuckGames} games`],
+    [`${num.format(s.mastered)} / ${num.format(s.subjects)}`, 'n'], [s.version], [when(s.last_at)],
+  ]), 'Nobody stuck.', 7);
 }
 
 const NS = 'http://www.w3.org/2000/svg';

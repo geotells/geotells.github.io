@@ -17,8 +17,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&display=swap">
 <!-- ?v= changes with every change to them: the site lets browsers keep a file
      10 minutes, and a new version must not wait behind the old one. -->
-<link rel="stylesheet" href="faro.css?v=2026-10-30a">
-<script type="module" src="faro.js?v=2026-10-30a"></script>
+<link rel="stylesheet" href="faro.css?v=2026-11-11a">
+<script type="module" src="faro.js?v=2026-11-11a"></script>
 </head>
 <body>
 <main>
@@ -74,6 +74,7 @@
 
     <nav class="tabs" role="tablist">
       <button type="button" role="tab" data-tab="stats" aria-selected="true">Stats</button>
+      <button type="button" role="tab" data-tab="progress">Progress</button>
       <button type="button" role="tab" data-tab="reports">Reports <span class="badge" id="new-count" hidden></span></button>
       <button type="button" role="tab" data-tab="scenes">Scenes <span class="badge" id="scene-count" hidden></span></button>
       <button type="button" role="tab" data-tab="crashes">Crashes <span class="badge" id="crash-count" hidden></span></button>
@@ -194,6 +195,26 @@
         <div class="card"><h3>Reports</h3><p class="note">Both apps. Received per week, last 12 weeks.</p><ul class="list" id="l-reports"></ul><div class="chart" id="c-reports"></div></div>
         <div class="card"><h3>Reminders</h3><p class="note">Phones on the server right now, test installs left out.</p><ul class="list" id="l-counts"></ul></div>
         <div class="card"><h3>Emulators and computer builds</h3><p class="note">Last 30 days, both apps. Kept out of every count above.</p><ul class="list" id="l-tests"></ul></div>
+      </div>
+    </section>
+
+    <!-- Progress -->
+    <section id="t-progress" class="tab" hidden>
+      <div class="bar">
+        <div class="chips" id="progress-days" role="group" aria-label="Days">
+          <button type="button" class="chip" data-days="7" aria-pressed="false">7 days</button>
+          <button type="button" class="chip" data-days="30" aria-pressed="true">30 days</button>
+          <button type="button" class="chip" data-days="90" aria-pressed="false">90 days</button>
+        </div>
+        <div class="row"><span class="when" id="progress-when">Loading…</span><button type="button" id="reload-progress">Refresh</button></div>
+      </div>
+      <p class="note">From the lesson logs: every lesson game of the apps that send them (2.4.1 and its betas), test builds left out. A game that masters nothing new of its lesson is getting nowhere; <b id="progress-n">3</b> of them in a row and the player is stuck. Counts of mastered come with the stable 2.4.1: games of the betas before it count only for players, games and right.</p>
+      <div class="kpis small" id="k-progress"></div>
+      <div class="grid">
+        <div class="card wide"><h3>Lessons</h3><p class="note">Each lesson level by its own key (phone_family is Phone codes' zones and families). Moving on: games that mastered something new. Dry run: the longest run of games mastering nothing, per player. First: games until the first thing mastered. Reviews: the "these are giving you trouble" cards before a stuck lesson; worked = that game then mastered something or got 60 % right.</p>
+          <div class="scroll"><table><thead><tr><th>Lesson</th><th class="n">Players</th><th class="n">Games</th><th class="n">Right</th><th class="n">Moving on</th><th class="n">Stuck now</th><th class="n">Dry run</th><th class="n">First</th><th class="n">Reviews</th></tr></thead><tbody id="t-lesson-progress"></tbody></table></div></div>
+        <div class="card wide"><h3>Players stuck now</h3><p class="note">Their last games in a lesson mastered nothing new. Player: the first 8 characters of the install's id, as in the lesson logs.</p>
+          <div class="scroll"><table><thead><tr><th>Player</th><th>Lesson</th><th class="n">Games</th><th class="n">Right</th><th class="n">Mastered</th><th>Version</th><th>Last</th></tr></thead><tbody id="t-stuck"></tbody></table></div></div>
       </div>
     </section>
 
