@@ -18,7 +18,7 @@
 <!-- ?v= changes with every change to them: the site lets browsers keep a file
      10 minutes, and a new version must not wait behind the old one. -->
 <link rel="stylesheet" href="faro.css?v=2026-11-11a">
-<script type="module" src="faro.js?v=2026-11-11a"></script>
+<script type="module" src="faro.js?v=2026-11-12b"></script>
 </head>
 <body>
 <main>
@@ -75,6 +75,7 @@
     <nav class="tabs" role="tablist">
       <button type="button" role="tab" data-tab="stats" aria-selected="true">Stats</button>
       <button type="button" role="tab" data-tab="progress">Progress</button>
+      <button type="button" role="tab" data-tab="onboarding">Onboarding</button>
       <button type="button" role="tab" data-tab="reports">Reports <span class="badge" id="new-count" hidden></span></button>
       <button type="button" role="tab" data-tab="scenes">Scenes <span class="badge" id="scene-count" hidden></span></button>
       <button type="button" role="tab" data-tab="crashes">Crashes <span class="badge" id="crash-count" hidden></span></button>
@@ -215,6 +216,29 @@
           <div class="scroll"><table><thead><tr><th>Lesson</th><th class="n">Players</th><th class="n">Games</th><th class="n">Right</th><th class="n">Moving on</th><th class="n">Stuck now</th><th class="n">Dry run</th><th class="n">First</th><th class="n">Reviews</th></tr></thead><tbody id="t-lesson-progress"></tbody></table></div></div>
         <div class="card wide"><h3>Players stuck now</h3><p class="note">Their last games in a lesson mastered nothing new. Player: the first 8 characters of the install's id, as in the lesson logs.</p>
           <div class="scroll"><table><thead><tr><th>Player</th><th>Lesson</th><th class="n">Games</th><th class="n">Right</th><th class="n">Mastered</th><th>Version</th><th>Last</th></tr></thead><tbody id="t-stuck"></tbody></table></div></div>
+      </div>
+    </section>
+
+    <!-- Onboarding -->
+    <section id="t-onboarding" class="tab" hidden>
+      <div class="bar">
+        <div class="chips" id="onboarding-from" role="group" aria-label="Tours">
+          <button type="button" class="chip" data-from="first" aria-pressed="true">First launch</button>
+          <button type="button" class="chip" data-from="settings" aria-pressed="false">From Settings</button>
+        </div>
+        <div class="chips" id="onboarding-days" role="group" aria-label="Days">
+          <button type="button" class="chip" data-days="7" aria-pressed="false">7 days</button>
+          <button type="button" class="chip" data-days="30" aria-pressed="true">30 days</button>
+          <button type="button" class="chip" data-days="90" aria-pressed="false">90 days</button>
+        </div>
+        <div class="row"><span class="when" id="onboarding-when">Loading…</span><button type="button" id="reload-onboarding">Refresh</button></div>
+      </div>
+      <p class="note">From the welcome tour's events (onboarding_events): each time through the tour is one run, followed through the tour, the practice round or the placement test, and the tips on home: those of a first launch, or those opened again from Settings (players who already play). Phones only: emulators and local builds left out.</p>
+      <div class="kpis small" id="k-onboarding"></div>
+      <div class="grid">
+        <div class="card wide"><h3>Funnel</h3><p class="note">Runs that reached each step, as a share of those that started.</p><div class="chart" id="c-tour-funnel"></div></div>
+        <div class="card"><h3>Answers</h3><p class="note">How the tour's questions were answered, and on which page Skip was tapped.</p><div class="scroll"><table><thead><tr><th>Question</th><th>Answer</th><th class="n">Runs</th></tr></thead><tbody id="t-onboarding-answers"></tbody></table></div></div>
+        <div class="card"><h3>New tours a day</h3><div class="chart" id="c-onboarding-daily"></div></div>
       </div>
     </section>
 

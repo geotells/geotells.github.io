@@ -152,7 +152,7 @@ function openTab(name) {
   for (const t of document.querySelectorAll('.tab')) t.hidden = t.id !== `t-${name}`;
   history.replaceState(null, '', `#${name}`);
   say($('panel-error'));
-  const load = { progress: loadProgress, reports: loadReports, scenes: loadScenes, crashes: loadCrashes, stats: loadStats, versions: loadVersions, settings: loadSettings }[name];
+  const load = { progress: loadProgress, onboarding: loadOnboarding, reports: loadReports, scenes: loadScenes, crashes: loadCrashes, stats: loadStats, versions: loadVersions, settings: loadSettings }[name];
   if (name === 'reports' || name === 'scenes' || name === 'crashes' || !loaded[name]) load().then(() => { loaded[name] = true; }, panelError);
 }
 
@@ -859,6 +859,84 @@ function drawProgress(p) {
     [s.player], [lessonName(s.lesson), '', s.lesson], [num.format(s.games), 'n'], [`${s.right_pct}%`, 'n', `Last ${p.stuckGames} games`],
     [`${num.format(s.mastered)} / ${num.format(s.subjects)}`, 'n'], [s.version], [when(s.last_at)],
   ]), 'Nobody stuck.', 7);
+}
+
+// ---- Onboarding ------------------------------------------------------
+
+// What admin_onboarding gives (supabase/migrations/20261112120000_onboarding_events.sql):
+// the welcome tour's funnel, first launches on phones only.
+
+$('reload-onboarding').addEventListener('click', () => reload(loadOnboarding));
+
+let onboardingDays = (() => { try { return Number(localStorage.getItem('faro-onboarding-days')) || 30; } catch { return 30; } })();
+for (const chip of document.querySelectorAll('#onboarding-days .chip')) {
+  chip.setAttribute('aria-pressed', String(Number(chip.dataset.days) === onboardingDays));
+  chip.addEventListener('click', () => {
+    onboardingDays = Number(chip.dataset.days);
+    try { localStorage.setItem('faro-onboarding-days', String(onboardingDays)); } catch { /* kept for this visit only */ }
+    for (const c of document.querySelectorAll('#onboarding-days .chip')) c.setAttribute('aria-pressed', String(c === chip));
+    reload(loadOnboarding);
+  });
+}
+
+let onboardingFrom = 'first';
+for (const chip of document.querySelectorAll('#onboarding-from .chip')) {
+  chip.addEventListener('click', () => {
+    onboardingFrom = chip.dataset.from;
+    for (const c of document.querySelectorAll('#onboarding-from .chip')) c.setAttribute('aria-pressed', String(c === chip));
+    reload(loadOnboarding);
+  });
+}
+
+async function loadOnboarding() {
+  $('onboarding-when').textContent = 'Loading…';
+  const o = await call('admin_onboarding', { p_days: onboardingDays, p_from: onboardingFrom });
+  drawOnboarding(o);
+  $('onboarding-when').textContent = `Last ${o.days} days · ${new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+// The tour's questions and answers, as the app sends them.
+const ONBOARDING_ANSWERS = {
+  guess: ['Where is this street?', { paris: 'Paris (right)', newyork: 'New York', tokyo: 'Tokyo' }],
+  stripe: ['Tap what gives the road away', { found: 'Tapped the lines', shown: 'Shown after 2 misses' }],
+  sign: ['Which country is the sign in?', { RS: 'Serbia (right)', BR: 'Brazil', JP: 'Japan' }],
+  level: ['How much have you played?', { never: 'Never', little: 'A little', lots: 'A lot' }],
+  skip: ['Skip, on page', { 1: 'Page 1', 2: 'Page 2', 3: 'Page 3' }],
+};
+
+function drawOnboarding(o) {
+  const f = o.funnel, a = o.after;
+  const box = $('k-onboarding');
+  box.replaceChildren();
+  for (const [label, value, sub] of [
+    o.from === 'settings'
+      ? ['Tours from Settings', num.format(f.started), `and ${num.format(o.firstRuns)} first launches`]
+      : ['First launches', num.format(f.started), `and ${num.format(o.settingsRuns)} tours from Settings`],
+    ['Finished the tour', share(f.level + f.straight, f.started), `${num.format(f.skipped)} skipped, ${num.format(f.brought)} brought progress`],
+    ['Played the practice', share(f.practice_done, f.started), o.practiceRightAvg == null ? 'none finished yet' : `${o.practiceRightAvg} of 5 right on average`],
+    ['Came back another day', share(a.came_back, a.players), `${num.format(a.played_lesson)} of ${num.format(a.players)} played a lesson`],
+  ]) {
+    const k = document.createElement('div');
+    k.className = 'kpi';
+    for (const [cls, t] of [['label', label], ['value', value], ['sub', sub]]) {
+      const s = document.createElement('span'); s.className = cls; s.textContent = t; k.appendChild(s);
+    }
+    box.appendChild(k);
+  }
+  const steps = [
+    ['Started', f.started], ['Answered Paris', f.guess], ['Page 2', f.page2], ['Got past the stripe', f.stripe],
+    ['Page 3', f.page3], ['Answered the sign', f.sign], ['Page 4', f.page4], ['Chose a level', f.level],
+    ['Practice started', f.practice], ['Practice finished', f.practice_done], ['Placement started', f.placement],
+    ['Placement finished', f.placement_done], ['Tips on home seen', f.tips_done],
+  ];
+  if (!f.started) empty($('c-tour-funnel'), 'No tours yet.');
+  else bars($('c-tour-funnel'), steps, (s) => s[0], (s) => s[1], () => 'var(--gold)', (s) => `${num.format(s[1])} · ${share(s[1], f.started)}`);
+  const rows = o.answers.slice().sort((x, y) => Object.keys(ONBOARDING_ANSWERS).indexOf(x.step) - Object.keys(ONBOARDING_ANSWERS).indexOf(y.step));
+  tableRows($('t-onboarding-answers'), rows.map((r) => {
+    const [question, names] = ONBOARDING_ANSWERS[r.step] ?? [r.step, {}];
+    return [[question], [names[r.value] ?? r.value], [num.format(r.runs), 'n']];
+  }), 'No answers yet.', 3);
+  columns($('c-onboarding-daily'), o.daily, (d) => shortDay(d.day), [{ key: 'runs', color: () => 'var(--gold)' }]);
 }
 
 const NS = 'http://www.w3.org/2000/svg';
