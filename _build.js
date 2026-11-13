@@ -18,7 +18,7 @@ const android = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="current
 
 const shots = [
   ['Home: the daily challenge, the word of the day and the lessons', 'Inicio: el reto diario, la palabra del día y las lecciones'],
-  ['A real car with its plate blurred: which country is it?', 'Un coche real con la matrícula difuminada: ¿de qué país es?'],
+  ['A blurred plate, as you see it in the game: which country is it?', 'Una matrícula difuminada, como la verás en el juego: ¿de qué país es?'],
   ['Which writing is on the sign?', '¿Qué escritura hay en la señal?'],
   ['Missed it? The clue explained: yellow plates with the EU strip', '¿Fallaste? La pista explicada: matrículas amarillas con la franja de la UE'],
   ['Which country’s flag is this?', '¿De qué país es esta bandera?'],
