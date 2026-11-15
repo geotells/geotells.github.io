@@ -100,6 +100,8 @@ label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color:
 .kpi .sub { color: var(--muted); font-size: 13px; }
 .kpi.lead { border-color: var(--gold); }
 .kpi.lead .value { color: var(--gold); }
+.kpi.warn { border-color: var(--bad); }
+.kpi.warn .value { color: var(--bad); }
 .kpis.small .kpi { padding: 12px 16px; }
 .kpis.small .kpi .value { font-size: 28px; }
 .kpi .sub .up { color: var(--ok); font-weight: 700; }

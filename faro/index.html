@@ -17,8 +17,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;600;700;800&display=swap">
 <!-- ?v= changes with every change to them: the site lets browsers keep a file
      10 minutes, and a new version must not wait behind the old one. -->
-<link rel="stylesheet" href="faro.css?v=2026-11-11a">
-<script type="module" src="faro.js?v=2026-11-12b"></script>
+<link rel="stylesheet" href="faro.css?v=2026-11-15a">
+<script type="module" src="faro.js?v=2026-11-15a"></script>
 </head>
 <body>
 <main>
@@ -79,6 +79,7 @@
       <button type="button" role="tab" data-tab="reports">Reports <span class="badge" id="new-count" hidden></span></button>
       <button type="button" role="tab" data-tab="scenes">Scenes <span class="badge" id="scene-count" hidden></span></button>
       <button type="button" role="tab" data-tab="crashes">Crashes <span class="badge" id="crash-count" hidden></span></button>
+      <button type="button" role="tab" data-tab="api">API</button>
       <button type="button" role="tab" data-tab="versions">Versions</button>
       <button type="button" role="tab" data-tab="settings">Settings</button>
     </nav>
@@ -239,6 +240,43 @@
         <div class="card wide"><h3>Funnel</h3><p class="note">Runs that reached each step, as a share of those that started.</p><div class="chart" id="c-tour-funnel"></div></div>
         <div class="card"><h3>Answers</h3><p class="note">How the tour's questions were answered, and on which page Skip was tapped.</p><div class="scroll"><table><thead><tr><th>Question</th><th>Answer</th><th class="n">Runs</th></tr></thead><tbody id="t-onboarding-answers"></tbody></table></div></div>
         <div class="card"><h3>New tours a day</h3><div class="chart" id="c-onboarding-daily"></div></div>
+      </div>
+    </section>
+
+    <!-- API: what Google's APIs cost, and the Street View scene budget -->
+    <section id="t-api" class="tab" hidden>
+      <div class="bar">
+        <div class="chips" id="api-days" role="group" aria-label="Days">
+          <button type="button" class="chip" data-days="30" aria-pressed="true">30 days</button>
+          <button type="button" class="chip" data-days="60" aria-pressed="false">60 days</button>
+          <button type="button" class="chip" data-days="90" aria-pressed="false">90 days</button>
+        </div>
+        <div class="row"><span class="when" id="api-when">Loading…</span><button type="button" id="reload-api">Refresh</button></div>
+      </div>
+      <p class="note">Google charges for each Street View panorama the app opens past 5,000 a month ($14 per 1,000 after). The app asks the server before opening one (apps from this version on); the month's scenes are shared out among the players of each day. Google's own daily caps stop anything that skips the server. Days are UTC.</p>
+      <div class="kpis small" id="k-api"></div>
+      <div class="grid">
+        <div class="card wide"><h3>Street View in the app, per day</h3><p class="note" id="api-android-note">Requests Google counted for the Android key (each scene opened, and a few calls around it).</p><div class="chart" id="c-api-android"></div></div>
+        <div class="card wide"><h3>Scenes given by the server, per day</h3><p class="note">What apps asked for and got, a few at a time; a scene given is not always opened.</p>
+          <div class="legend"><span><i class="sw gold"></i>Scenes given</span></div>
+          <div class="chart" id="c-api-scenes"></div></div>
+        <div class="card"><h3>Google APIs this month</h3><p class="note">Every API of the project, requests since the 1st.</p><ul class="list" id="l-api-month"></ul></div>
+        <div class="card"><h3>Caps and alerts in Google Cloud</h3><p class="note">Set in the Google Cloud project, not here. Past a cap Google answers no more that day: the app shows its drawings, Faro's Scenes tab its error.</p><ul class="list" id="l-api-caps"></ul></div>
+        <div class="card">
+          <h3>Scene budget</h3>
+          <p class="note">Per player and day: what is left of the month, over the days left, over the players of a day, never under the minimum nor over the maximum. Off: no scene for anyone, at once.</p>
+          <form id="f-scene-budget" class="stack">
+            <label class="toggle"><input type="checkbox" id="sb-enabled"> Scenes on</label>
+            <label for="sb-monthly">Scenes a month</label>
+            <input id="sb-monthly" type="number" min="0" step="100" required>
+            <label for="sb-min">Minimum per player a day</label>
+            <input id="sb-min" type="number" min="0" max="500" required>
+            <label for="sb-max">Maximum per player a day</label>
+            <input id="sb-max" type="number" min="0" max="500" required>
+            <p class="error" id="sb-error" hidden></p>
+            <button class="primary" type="submit">Save</button>
+          </form>
+        </div>
       </div>
     </section>
 

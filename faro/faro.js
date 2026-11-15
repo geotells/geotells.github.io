@@ -152,7 +152,7 @@ function openTab(name) {
   for (const t of document.querySelectorAll('.tab')) t.hidden = t.id !== `t-${name}`;
   history.replaceState(null, '', `#${name}`);
   say($('panel-error'));
-  const load = { progress: loadProgress, onboarding: loadOnboarding, reports: loadReports, scenes: loadScenes, crashes: loadCrashes, stats: loadStats, versions: loadVersions, settings: loadSettings }[name];
+  const load = { progress: loadProgress, onboarding: loadOnboarding, reports: loadReports, scenes: loadScenes, crashes: loadCrashes, stats: loadStats, api: loadApi, versions: loadVersions, settings: loadSettings }[name];
   if (name === 'reports' || name === 'scenes' || name === 'crashes' || !loaded[name]) load().then(() => { loaded[name] = true; }, panelError);
 }
 
@@ -1256,6 +1256,124 @@ let resize;
 window.addEventListener('resize', () => {
   clearTimeout(resize);
   resize = setTimeout(() => { if (lastStats && !$('t-stats').hidden) drawStats(...lastStats); }, 150);
+});
+
+// ---- API -------------------------------------------------------------
+
+// What admin_api_usage gives (supabase/migrations/20261115190000_api_usage.sql):
+// the scene budget, the scenes given per day, and Google's requests per day
+// and service (copied every 3 hours by .github/workflows/api_usage.yml).
+
+// Set in the Google Cloud project (quotas and Monitoring alerts), not on the
+// server: kept here by hand when they change there.
+const GOOGLE = {
+  android: { service: 'maps-android-backend.googleapis.com', name: 'Street View (app)', cap: 400, alert: 250, free: 5000 },
+  web: { service: 'maps-backend.googleapis.com', name: 'Maps JS (Faro)', cap: 160, alert: 120 },
+};
+const SERVICE_NAMES = {
+  'maps-android-backend.googleapis.com': 'Maps SDK for Android',
+  'maps-backend.googleapis.com': 'Maps JavaScript API',
+  'fcm.googleapis.com': 'Cloud Messaging (pushes)',
+  'firebaseinstallations.googleapis.com': 'Firebase installations',
+  'identitytoolkit.googleapis.com': 'Sign-in (Identity Toolkit)',
+  'mapsbilling-pa.googleapis.com': 'Maps billing (with Maps JS)',
+};
+
+$('reload-api').addEventListener('click', () => reload(loadApi));
+
+let apiDays = (() => { try { return Number(localStorage.getItem('faro-api-days')) || 30; } catch { return 30; } })();
+for (const chip of document.querySelectorAll('#api-days .chip')) {
+  chip.setAttribute('aria-pressed', String(Number(chip.dataset.days) === apiDays));
+  chip.addEventListener('click', () => {
+    apiDays = Number(chip.dataset.days);
+    try { localStorage.setItem('faro-api-days', String(apiDays)); } catch { /* kept for this visit only */ }
+    for (const c of document.querySelectorAll('#api-days .chip')) c.setAttribute('aria-pressed', String(c === chip));
+    reload(loadApi);
+  });
+}
+
+let lastApi = null;
+let apiResize;
+window.addEventListener('resize', () => {
+  clearTimeout(apiResize);
+  apiResize = setTimeout(() => { if (lastApi && !$('t-api').hidden) drawApi(lastApi); }, 150);
+});
+
+async function loadApi() {
+  $('api-when').textContent = 'Loading…';
+  const a = lastApi = await call('admin_api_usage', { p_days: apiDays });
+  // After the tab is laid out, so the charts know their width.
+  await new Promise(requestAnimationFrame);
+  drawApi(a);
+  const google = a.google_updated ? `Google's counts ${when(a.google_updated)}` : 'No counts from Google yet';
+  $('api-when').textContent = `Last ${a.days} days · ${google}`;
+}
+
+function drawApi(a) {
+  const today = new Date().toISOString().slice(0, 10);
+  const month = today.slice(0, 8);
+  const google = (service) => a.google.filter((g) => g.service === service);
+  const on = (rows, day) => rows.find((r) => r.day === day)?.requests ?? 0;
+  const inMonth = (rows) => rows.filter((r) => r.day.startsWith(month)).reduce((n, r) => n + r.requests, 0);
+  const android = google(GOOGLE.android.service), web = google(GOOGLE.web.service);
+  const b = a.budget, s = a.share;
+  const box = $('k-api');
+  box.replaceChildren();
+  for (const [label, value, sub, warn] of [
+    ['Scenes this month', `${num.format(s.month_used)} / ${num.format(b.monthly_limit)}`, `${num.format(s.month_left)} left, ${s.days_left} days to go`, s.month_left === 0],
+    ['Per player today', b.enabled ? num.format(s.allowance) : 'Off', b.enabled ? `about ${num.format(s.active)} players a day · ${b.min_daily} to ${b.max_daily}` : 'scenes turned off', !b.enabled],
+    [`${GOOGLE.android.name} today`, `${num.format(on(android, today))} / ${GOOGLE.android.cap}`, `${num.format(inMonth(android))} this month, ${num.format(GOOGLE.android.free)} free`, on(android, today) >= GOOGLE.android.alert],
+    [`${GOOGLE.web.name} today`, `${num.format(on(web, today))} / ${GOOGLE.web.cap}`, `${num.format(inMonth(web))} this month`, on(web, today) >= GOOGLE.web.alert],
+  ]) {
+    const k = document.createElement('div');
+    k.className = warn ? 'kpi warn' : 'kpi';
+    for (const [cls, t] of [['label', label], ['value', value], ['sub', sub]]) {
+      const span = document.createElement('span'); span.className = cls; span.textContent = t; k.appendChild(span);
+    }
+    box.appendChild(k);
+  }
+  // Every day of the period, those Google has no count for at 0.
+  const days = a.scenes.map((r) => r.day);
+  const androidDays = days.map((day) => ({ day, requests: on(android, day) }));
+  const overAlert = (r) => (r.requests >= GOOGLE.android.alert ? 'var(--bad)' : 'var(--blue)');
+  if (!android.length) empty($('c-api-android'), 'No counts from Google yet.');
+  else columns($('c-api-android'), androidDays, (r) => shortDay(r.day), [{ key: 'requests', color: overAlert }], { dim: (r) => r.day === today });
+  $('api-android-note').textContent = `Requests Google counted for the Android key (each scene opened, and a few calls around it). Red: ${GOOGLE.android.alert} or more, when Google sends the alert; it stops at ${GOOGLE.android.cap}.`;
+  if (!a.scenes.some((r) => r.given)) empty($('c-api-scenes'), 'No scenes given yet.');
+  else columns($('c-api-scenes'), a.scenes, (r) => shortDay(r.day), [{ key: 'given', color: () => 'var(--gold)' }], { dim: (r) => r.day === today });
+  const byService = {};
+  for (const g of a.google) if (g.day.startsWith(month)) byService[g.service] = (byService[g.service] ?? 0) + g.requests;
+  listRows($('l-api-month'), Object.entries(byService).sort((x, y) => y[1] - x[1]).map(([svc, n]) => [SERVICE_NAMES[svc] ?? svc.replace('.googleapis.com', ''), n]), 'No counts from Google yet.');
+  listRows($('l-api-caps'), [
+    [`${GOOGLE.android.name}: daily cap`, GOOGLE.android.cap],
+    [`${GOOGLE.android.name}: email alert in 24 h`, GOOGLE.android.alert],
+    [`${GOOGLE.web.name}: daily cap`, GOOGLE.web.cap],
+    [`${GOOGLE.web.name}: email alert in 24 h`, GOOGLE.web.alert],
+    ['Maps JS 3D and grounding', 'Off'],
+  ], '');
+  $('sb-enabled').checked = b.enabled;
+  $('sb-monthly').value = b.monthly_limit;
+  $('sb-min').value = b.min_daily;
+  $('sb-max').value = b.max_daily;
+}
+
+$('f-scene-budget').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  say($('sb-error'));
+  const enabled = $('sb-enabled').checked;
+  const monthly = Number($('sb-monthly').value), min = Number($('sb-min').value), max = Number($('sb-max').value);
+  if (max < min) return say($('sb-error'), 'The maximum cannot be under the minimum.');
+  if (!enabled && !confirm('No player will see Street View scenes until they are turned on again. Save?')) return;
+  const button = ev.submitter;
+  button.disabled = true;
+  try {
+    await call('admin_set_scene_budget', { p_enabled: enabled, p_monthly: monthly, p_min: min, p_max: max });
+    await loadApi();
+  } catch (e) {
+    say($('sb-error'), e.message);
+  } finally {
+    button.disabled = false;
+  }
 });
 
 // ---- Versions --------------------------------------------------------
