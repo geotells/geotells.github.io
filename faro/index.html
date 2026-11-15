@@ -18,7 +18,7 @@
 <!-- ?v= changes with every change to them: the site lets browsers keep a file
      10 minutes, and a new version must not wait behind the old one. -->
 <link rel="stylesheet" href="faro.css?v=2026-11-15a">
-<script type="module" src="faro.js?v=2026-11-15a"></script>
+<script type="module" src="faro.js?v=2026-11-15b"></script>
 </head>
 <body>
 <main>
@@ -275,6 +275,17 @@
             <input id="sb-max" type="number" min="0" max="500" required>
             <p class="error" id="sb-error" hidden></p>
             <button class="primary" type="submit">Save</button>
+          </form>
+        </div>
+        <div class="card">
+          <h3>Unlimited scenes</h3>
+          <p class="note">Phones with no daily allowance, by the Google account signed in on them. Their scenes count in the month's total and stop with it; Google's daily cap is for everyone.</p>
+          <ul class="list" id="l-unlimited"></ul>
+          <form id="f-unlimited" class="stack">
+            <label for="unlimited-email">Google account</label>
+            <input id="unlimited-email" type="email" placeholder="name@gmail.com" autocomplete="off" spellcheck="false" required>
+            <p class="error" id="unlimited-error" hidden></p>
+            <button class="primary" type="submit">Add</button>
           </form>
         </div>
       </div>

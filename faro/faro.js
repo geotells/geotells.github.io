@@ -1302,9 +1302,10 @@ window.addEventListener('resize', () => {
 async function loadApi() {
   $('api-when').textContent = 'Loading…';
   const a = lastApi = await call('admin_api_usage', { p_days: apiDays });
-  // After the tab is laid out, so the charts know their width.
-  await new Promise(requestAnimationFrame);
   drawApi(a);
+  // Again once the tab is laid out, so the charts know their width (not
+  // before the page is in sight).
+  requestAnimationFrame(() => { if (lastApi === a) drawApi(a); });
   const google = a.google_updated ? `Google's counts ${when(a.google_updated)}` : 'No counts from Google yet';
   $('api-when').textContent = `Last ${a.days} days · ${google}`;
 }
@@ -1351,11 +1352,55 @@ function drawApi(a) {
     [`${GOOGLE.web.name}: email alert in 24 h`, GOOGLE.web.alert],
     ['Maps JS 3D and grounding', 'Off'],
   ], '');
+  drawUnlimited(a.unlimited ?? []);
   $('sb-enabled').checked = b.enabled;
   $('sb-monthly').value = b.monthly_limit;
   $('sb-min').value = b.min_daily;
   $('sb-max').value = b.max_daily;
 }
+
+// Each with its scenes today and this month, and Remove.
+function drawUnlimited(rows) {
+  const box = $('l-unlimited');
+  box.replaceChildren();
+  if (!rows.length) { const li = document.createElement('li'); li.className = 'empty'; li.textContent = 'Nobody yet.'; return box.appendChild(li); }
+  for (const r of rows) {
+    const li = document.createElement('li');
+    const span = document.createElement('span'); span.textContent = r.email;
+    const b = document.createElement('b'); b.textContent = `${num.format(r.today)} today · ${num.format(r.month)} this month `;
+    const remove = document.createElement('button');
+    remove.type = 'button'; remove.textContent = 'Remove';
+    remove.addEventListener('click', async () => {
+      if (!confirm(`${r.email} goes back to the daily allowance. Remove?`)) return;
+      remove.disabled = true;
+      try {
+        await call('admin_remove_scene_unlimited', { p_email: r.email });
+        await loadApi();
+      } catch (e) {
+        say($('unlimited-error'), e.message);
+        remove.disabled = false;
+      }
+    });
+    b.appendChild(remove);
+    li.append(span, b); box.appendChild(li);
+  }
+}
+
+$('f-unlimited').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  say($('unlimited-error'));
+  const button = ev.submitter;
+  button.disabled = true;
+  try {
+    await call('admin_add_scene_unlimited', { p_email: $('unlimited-email').value.trim() });
+    $('unlimited-email').value = '';
+    await loadApi();
+  } catch (e) {
+    say($('unlimited-error'), e.message);
+  } finally {
+    button.disabled = false;
+  }
+});
 
 $('f-scene-budget').addEventListener('submit', async (ev) => {
   ev.preventDefault();
