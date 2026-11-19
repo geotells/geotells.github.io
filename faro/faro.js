@@ -739,18 +739,26 @@ for (const chip of document.querySelectorAll('#stats-app .chip')) {
   });
 }
 
-// The lessons in the order they open, with what opens them.
+// The lessons in the order they open, with what opens them (LessonUnlock in
+// lib/game/country_lessons.dart; levels as restructured on 2026-11-15).
 const LESSONS = [
   ['hemisphere', 'Hemispheres', 'L1'], ['continent', 'Continents', 'L1'], ['map', 'Find the country', 'L1'],
-  ['flag', 'Flags', 'L2'], ['plate', 'Plates', 'L3'], ['driving_side', 'Driving side', 'L4'], ['coverage', 'Coverage', 'L5'],
-  ['capital', 'Capitals', 'L6'], ['neighbours', 'Neighbors', 'L7'], ['alphabet', 'Alphabets', 'L8'],
-  ['latin_letters', 'Latin letters', 'Alphabets 1'], ['one_country', 'One letter, one country', 'Alphabets 2'],
-  ['lookalike', 'Look-alike scripts', 'Alphabets 3'],
-  ['road_lines', 'Road lines', 'L9'], ['language', 'Languages', 'L10'], ['street_names', 'Street names', 'Languages'],
-  ['domain', 'Domains', 'L11'], ['coast', 'Coasts', 'L12'], ['city', 'Cities', 'L13'], ['phone', 'Phone codes', 'L14'],
-  ['us_states', 'US states', 'L15'], ['ca_provinces', 'Canadian provinces', 'L15'], ['stop_signs', 'Stop signs', 'L16'],
-  ['front_plates', 'Front plates', 'L17'], ['phone_family', 'Phone zones and families', 'L14'],
-  ['chevrons', 'Chevrons', 'L18'], ['rivers', 'Rivers', 'L19'], ['lakes', 'Lakes', 'Rivers'],
+  ['flag', 'Flags', 'L2'], ['plate', 'Plates', 'L4'], ['driving_side', 'Driving side', 'L5'], ['coverage', 'Coverage', 'L6'],
+  ['capital', 'Capitals', 'L7'], ['neighbours', 'Neighbors', 'L8'], ['alphabet', 'Alphabets', 'L9'],
+  ['latin_letters', 'Telltale letters', 'Alphabets 1'], ['lookalike', 'Look-alike scripts', 'Alphabets 2'],
+  ['road_lines', 'Road lines', 'L11'], ['language', 'Languages', 'L12'], ['street_names', 'Street names', 'L13'],
+  ['domain', 'Domains', 'L14'], ['coast', 'Coasts', 'L16'], ['city', 'Cities', 'L17'],
+  ['phone_family', 'Phone zones and families', 'L18'], ['phone', 'Phone codes', 'Phone families'],
+  ['us_states', 'US states', 'L19'], ['ca_provinces', 'Canadian provinces', 'L19'], ['mx_states', 'Mexican states', 'L19'],
+  ['stop_signs', 'Stop signs', 'L20'],
+  ['br_states', 'Brazilian states', 'L21'], ['ar_provinces', 'Argentine provinces', 'L21'], ['cl_regions', 'Chilean regions', 'L21'],
+  ['front_plates', 'Front plates', 'L22'],
+  ['tr_provinces', 'Turkish provinces', 'L23'], ['ru_districts', 'Russian districts', 'L23'],
+  ['jp_regions', 'Japanese regions', 'L23'], ['id_islands', 'Indonesian islands', 'L23'],
+  ['chevrons', 'Chevrons', 'L24'], ['au_states', 'Australian states', 'L25'], ['za_provinces', 'South African provinces', 'L25'],
+  ['rivers', 'Rivers', 'L26'], ['lakes', 'Lakes', 'Rivers'],
+  // Gone on 2026-11-19 (its letters went to Telltale letters and Look-alikes); kept for old logs.
+  ['one_country', 'One letter, one country (removed)', '—'],
 ];
 const lessonOrder = (key) => { const i = LESSONS.findIndex(([k]) => k === key); return i < 0 ? LESSONS.length : i; };
 const lessonName = (key) => LESSONS.find(([k]) => k === key)?.[1] ?? key;
@@ -758,8 +766,11 @@ const lessonName = (key) => LESSONS.find(([k]) => k === key)?.[1] ?? key;
 // A subject as a person reads it: a country's name for its code, words for
 // the rest ("yellowEu" as "yellow eu").
 const regions = new Intl.DisplayNames('en', { type: 'region' });
+// Regions' subjects are states and provinces, whose codes (SA, WA, EC) are not countries.
+const REGION_SKILLS = new Set(['us_states', 'ca_provinces', 'mx_states', 'br_states', 'ar_provinces', 'cl_regions',
+  'tr_provinces', 'ru_districts', 'jp_regions', 'id_islands', 'au_states', 'za_provinces']);
 function subjectName(skill, s) {
-  if (/^[A-Z]{2}$/.test(s) && skill !== 'us_states' && skill !== 'ca_provinces') {
+  if (/^[A-Z]{2}$/.test(s) && !REGION_SKILLS.has(skill)) {
     try { return regions.of(s); } catch { return s; }
   }
   const words = s.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ');
