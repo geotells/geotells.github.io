@@ -1479,7 +1479,9 @@ $('f-versions').addEventListener('submit', async (ev) => {
 
 async function loadSettings() {
   me = await call('admin_me');
-  $('alert-state').textContent = me.alert_phone ? 'Alerts are on: they go to the phone you chose.' : 'Alerts are off.';
+  $('alert-state').textContent = !me.alert_phone ? 'Alerts are off.'
+    : me.alert_push ? 'Alerts are on: they go to the phone you chose.'
+    : 'Alerts are lost: the phone you chose has no notifications (signed out, reinstalled or notifications off). Choose your phone again.';
   $('alert-test').disabled = !me.alert_phone;
   $('alert-off').disabled = !me.alert_phone;
 }
@@ -1489,7 +1491,9 @@ $('f-alert').addEventListener('submit', async (ev) => {
   say($('alert-error'));
   try {
     const r = await call('admin_set_alert_phone', { p_code: $('transfer').value });
-    if (!r.found) return say($('alert-error'), 'No install has that transfer code. Check it in the app, under Settings.');
+    if (!r.found) return say($('alert-error'), $('transfer').value.includes('@')
+      ? 'No Google account with that email has signed in to the app.'
+      : 'No install has that transfer code. Check it in the app, under Settings.');
     $('transfer').value = '';
     await loadSettings();
     if (!r.push) $('alert-state').textContent = 'Phone found, but it has no notifications yet: turn on reminders in the app on that phone, open it once, then send a test.';

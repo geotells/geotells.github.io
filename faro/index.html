@@ -18,7 +18,7 @@
 <!-- ?v= changes with every change to them: the site lets browsers keep a file
      10 minutes, and a new version must not wait behind the old one. -->
 <link rel="stylesheet" href="faro.css?v=2026-11-15a">
-<script type="module" src="faro.js?v=2026-11-19a"></script>
+<script type="module" src="faro.js?v=2026-11-22a"></script>
 </head>
 <body>
 <main>
@@ -322,11 +322,11 @@
       <div class="grid">
         <div class="card">
           <h3>Report alerts on your phone</h3>
-          <p class="note">A push for every new report, on the phone where you play. In the app, open Settings → transfer code on that phone and type it here. The app needs notifications on.</p>
+          <p class="note">A push for every new report, on the phone where you play. Signed in with Google there: type that Google email. Otherwise open Settings → transfer code on that phone and type the code. The app needs notifications on.</p>
           <p id="alert-state" class="note"></p>
           <form id="f-alert" class="stack">
-            <label for="transfer">Transfer code</label>
-            <input id="transfer" placeholder="XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false">
+            <label for="transfer">Google email or transfer code</label>
+            <input id="transfer" placeholder="name@gmail.com or XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false">
             <p class="error" id="alert-error" hidden></p>
             <div class="row">
               <button class="primary" type="submit">Use this phone</button>
