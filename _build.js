@@ -167,7 +167,8 @@ ${blocks.map(block).join('\n')}
 }
 
 // The invitations on top of the app's page, for links shared with a result:
-// d.html for the daily challenge, w.html for the word of the day.
+// d.html for the daily challenge, w.html for the word of the day, s.html
+// for the Saturday game "Where Am I?".
 const invites = {
   daily: {
     title: 'GeoTells daily challenge',
@@ -182,6 +183,13 @@ const invites = {
     label: ['Word of the day', 'Palabra del día'],
     heading: ['Can you guess today’s word?', '¿Adivinas la palabra de hoy?'],
     text: ['A geography word in six tries, the same for everyone today. Install GeoTells and play today’s word.', 'Una palabra de geografía en seis intentos, la misma para todos hoy. Instala GeoTells y juega la palabra de hoy.'],
+  },
+  saturday: {
+    title: 'GeoTells: Where Am I?',
+    description: 'Every Saturday a real place, the same for everyone: three Street View scenes, combine the clues and drop your pin. How close can you get?',
+    label: ['Where Am I?', '¿Dónde estoy?'],
+    heading: ['How close can you get?', '¿Te acercas más que yo?'],
+    text: ['Every Saturday a real place, the same for everyone: three Street View scenes, combine the clues and drop your pin. Install GeoTells and play it.', 'Cada sábado un lugar real, el mismo para todos: tres escenas de Street View, combina las pistas y pon tu chincheta. Instala GeoTells y juégalo.'],
   },
 };
 
@@ -369,5 +377,6 @@ function importPage() {
 fs.writeFileSync('index.html', page({}));
 fs.writeFileSync('d.html', page({ invite: 'daily' }));
 fs.writeFileSync('w.html', page({ invite: 'word' }));
+fs.writeFileSync('s.html', page({ invite: 'saturday' }));
 fs.writeFileSync('privacy.html', privacyPage());
 fs.writeFileSync('importar.html', importPage());
