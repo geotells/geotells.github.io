@@ -18,7 +18,7 @@
 <!-- ?v= changes with every change to them: the site lets browsers keep a file
      10 minutes, and a new version must not wait behind the old one. -->
 <link rel="stylesheet" href="faro.css?v=2026-11-15a">
-<script type="module" src="faro.js?v=2026-11-22a"></script>
+<script type="module" src="faro.js?v=2026-11-25a"></script>
 </head>
 <body>
 <main>
@@ -116,16 +116,11 @@
     </section>
 
     <!-- Stats -->
-    <!-- Stats, most telling first: are people playing and coming back, the
-         move to GeoTells, what they learn, their habits, where the app
+    <!-- Stats, most telling first: are people playing and coming back,
+         accounts, what they learn, their habits, where the app
          comes from, and the day to day. -->
     <section id="t-stats" class="tab">
       <div class="bar">
-        <div class="chips" id="stats-app" role="group" aria-label="App">
-          <button type="button" class="chip" data-app="both" aria-pressed="true">Both apps</button>
-          <button type="button" class="chip" data-app="geotells" aria-pressed="false">GeoTells</button>
-          <button type="button" class="chip" data-app="geosense" aria-pressed="false">GeoSense</button>
-        </div>
         <div class="row"><span class="when" id="stats-when">Loading…</span><button type="button" id="reload-stats">Refresh</button></div>
       </div>
       <div class="kpis">
@@ -153,21 +148,15 @@
         <div class="card"><h3>Gifts for signing in, by where</h3><p class="note">Asked after a level or a streak, under a lesson's result, on home, in Settings, in the welcome tour.</p><ul class="list" id="l-gifts"></ul></div>
       </div>
 
-      <h2>The move to GeoTells</h2>
-      <div class="grid">
-        <div class="card"><h3>Where GeoSense players are</h3><p class="note">Moved: progress taken to GeoTells with the transfer code. The rest are GeoSense installs of the last 7 days.</p><ul class="list" id="l-move"></ul></div>
-        <div class="card"><h3>Moved per day</h3><p class="note">Test installs left out.</p><div class="chart" id="c-moved"></div></div>
-      </div>
-
       <h2>Learning</h2>
       <p class="note">From the progress copies in the cloud: one per player, test installs and copies already moved left out. Players who turned the copy off are not here.</p>
       <div class="kpis small" id="k-learning"></div>
       <div class="grid">
         <div class="card"><h3>Levels reached</h3><p class="note">Players who got at least this far, of those who played a lesson. Where the line drops is where they stop.</p><div class="chart" id="c-funnel"></div></div>
         <div class="card"><h3>Lessons finished</h3><p class="note">Players by lessons finished so far.</p><div class="chart" id="c-lessons"></div></div>
-        <div class="card wide"><h3>Lessons</h3><p class="note">Players who practised each, their answers right, and who mastered every subject in it (counted from GeoSense 1.6.1 and GeoTells).</p>
+        <div class="card wide"><h3>Lessons</h3><p class="note">Players who practised each, their answers right, and who mastered every subject in it.</p>
           <div class="scroll"><table><thead><tr><th>Lesson</th><th>Opens</th><th class="n">Players</th><th class="n">Right</th><th class="n">Answers</th><th class="n">Mastered</th></tr></thead><tbody id="t-skills"></tbody></table></div></div>
-        <div class="card"><h3>Most missed</h3><p class="note">Both apps. Subjects answered at least 3 times, most wrong first.</p>
+        <div class="card"><h3>Most missed</h3><p class="note">Subjects answered at least 3 times, most wrong first.</p>
           <select id="hardest-skill" aria-label="Lesson"></select>
           <div class="scroll"><table><thead><tr><th>Subject</th><th class="n">Wrong</th><th class="n">Answers</th><th class="n">Players</th></tr></thead><tbody id="t-hardest"></tbody></table></div></div>
       </div>
@@ -176,11 +165,11 @@
       <div class="grid">
         <div class="card"><h3>Streaks going now</h3><p class="note">Days in a row. A streak ends after two days without playing; the copy keeps it as it was, so those are left out here.</p>
           <ul class="list" id="l-streaks"></ul><div class="chart" id="c-streaks"></div></div>
-        <div class="card"><h3>Daily challenge</h3><p class="note">Both apps, real players only. Played: of the installs active that day.</p>
+        <div class="card"><h3>Daily challenge</h3><p class="note">Real players only. Played: of the installs active that day.</p>
           <div class="scroll"><table><thead><tr><th>#</th><th class="n">Players</th><th class="n">Played</th><th class="n">Average</th><th class="n">10/10</th><th class="n">Time</th></tr></thead><tbody id="t-challenge"></tbody></table></div></div>
-        <div class="card"><h3>Hardest challenge questions</h3><p class="note">Last 14 challenges, both apps: the questions most got wrong.</p>
+        <div class="card"><h3>Hardest challenge questions</h3><p class="note">Last 14 challenges: the questions most got wrong.</p>
           <div class="scroll"><table><thead><tr><th>#</th><th>Question</th><th class="n">Wrong</th></tr></thead><tbody id="t-questions"></tbody></table></div></div>
-        <div class="card"><h3>Word of the day</h3><p class="note">Both apps, from the copies. Finished: solved or out of tries; guesses of those.</p>
+        <div class="card"><h3>Word of the day</h3><p class="note">From the copies. Finished: solved or out of tries; guesses of those.</p>
           <div class="scroll"><table><thead><tr><th>#</th><th class="n">Players</th><th class="n">Finished</th><th class="n">Guesses</th></tr></thead><tbody id="t-words"></tbody></table></div></div>
       </div>
 
@@ -194,9 +183,9 @@
 
       <h2>Day to day</h2>
       <div class="grid">
-        <div class="card"><h3>Reports</h3><p class="note">Both apps. Received per week, last 12 weeks.</p><ul class="list" id="l-reports"></ul><div class="chart" id="c-reports"></div></div>
+        <div class="card"><h3>Reports</h3><p class="note">Received per week, last 12 weeks.</p><ul class="list" id="l-reports"></ul><div class="chart" id="c-reports"></div></div>
         <div class="card"><h3>Reminders</h3><p class="note">Phones on the server right now, test installs left out.</p><ul class="list" id="l-counts"></ul></div>
-        <div class="card"><h3>Emulators and computer builds</h3><p class="note">Last 30 days, both apps. Kept out of every count above.</p><ul class="list" id="l-tests"></ul></div>
+        <div class="card"><h3>Emulators and computer builds</h3><p class="note">Last 30 days. Kept out of every count above.</p><ul class="list" id="l-tests"></ul></div>
       </div>
     </section>
 
@@ -293,15 +282,9 @@
 
     <!-- Versions -->
     <section id="t-versions" class="tab" hidden>
-      <div class="bar">
-        <div class="chips" id="version-app" role="group" aria-label="App">
-          <button type="button" class="chip" data-app="geotells" aria-pressed="true">GeoTells</button>
-          <button type="button" class="chip" data-app="geosense" aria-pressed="false">GeoSense</button>
-        </div>
-      </div>
       <div class="grid">
         <div class="card">
-          <h3 id="versions-title">Update rule</h3>
+          <h3 id="versions-title">Update rule: GeoTells</h3>
           <p class="note">Versions below <b>recommended</b> are asked every 3 days to update from the app's website. Versions below <b>minimum</b> are blocked until they update. Leave empty for no one.</p>
           <form id="f-versions" class="stack">
             <label for="recommended">Recommended</label>
@@ -313,7 +296,7 @@
             <button class="primary" type="submit">Save</button>
           </form>
         </div>
-        <div class="card"><h3>Versions in use</h3><p class="note">Last 30 days, installs that share usage, of this app (GeoSense is 1.x, GeoTells 2.x and up).</p><div class="chart" id="c-versions-2"></div></div>
+        <div class="card"><h3>Versions in use</h3><p class="note">Last 30 days, installs that share usage, of GeoTells.</p><div class="chart" id="c-versions-2"></div></div>
       </div>
     </section>
 

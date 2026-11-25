@@ -7,16 +7,13 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://kvlhqytsdhstkjhoclxu.supabase.co';
 const PUBLISHABLE = 'sb_publishable_TOpALZYOS3lzNgfkuiGY2Q_6zpB-Lw3';
-// Each website's current APK, for its live download count: GeoTells on
-// geotells.com, and GeoSense (its last version, the move to GeoTells) on
-// playgeosense.com.
+// The website's current APK, for its live download count (geotells.com).
 const RELEASES = [
   { repo: 'geotells/geotells.github.io', apk: 'GeoTells.apk' },
-  { repo: 'geosenselearnthemetas-arch/geosenselearnthemetas-arch.github.io', apk: 'GeoSense.apk' },
 ];
 // Website downloads that were ours, not players': a release's APK fetched
 // to check it. Taken off each version's count, live or closed.
-const OWN_DOWNLOADS = { '2.0.0': 1, '1.7.0': 1 };
+const OWN_DOWNLOADS = { '2.0.0': 1 };
 // Google's Street View viewer for the Scenes tab: a browser key that only
 // works on the panel's own sites (Maps JavaScript API only). Public by
 // design, like the publishable key above.
@@ -720,24 +717,11 @@ async function showPanorama(el, sc) {
 // ---- Stats -----------------------------------------------------------
 
 // What admin_stats gives (supabase/migrations/20261023120000_faro_stats.sql)
-// comes per app where it can, so the tab shows GeoTells, GeoSense or both:
-// the two never share an install, so their counts add up.
+// comes per app where it can; the tab shows GeoTells only (2.x and up).
 $('reload-stats').addEventListener('click', () => reload(loadStats));
 
-const APPS = ['both', 'geotells', 'geosense'];
-let statsApp = (() => { try { return APPS.find((a) => a === localStorage.getItem('faro-stats-app')) ?? 'both'; } catch { return 'both'; } })();
-const inApp = (r) => statsApp === 'both' || r.app === statsApp;
-const appOfVersion = (v) => (v.startsWith('1.') ? 'geosense' : 'geotells');
-
-for (const chip of document.querySelectorAll('#stats-app .chip')) {
-  chip.setAttribute('aria-pressed', String(chip.dataset.app === statsApp));
-  chip.addEventListener('click', () => {
-    statsApp = chip.dataset.app;
-    try { localStorage.setItem('faro-stats-app', statsApp); } catch { /* kept for this visit only */ }
-    for (const c of document.querySelectorAll('#stats-app .chip')) c.setAttribute('aria-pressed', String(c === chip));
-    if (lastStats) drawStats(...lastStats);
-  });
-}
+const inApp = (r) => r.app === 'geotells';
+const isGeoTells = (v) => !v.startsWith('1.');
 
 // The lessons in the order they open, with what opens them (LessonUnlock in
 // lib/game/country_lessons.dart; levels as restructured on 2026-11-15).
@@ -781,7 +765,7 @@ const day = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5).toI
 const total = (rows, key) => rows.reduce((n, r) => n + (Number(r[key]) || 0), 0);
 const share = (a, b) => (b ? pct.format(a / b) : '—');
 
-// The rows of the apps shown, those with the same key added up.
+// The app's rows, those with the same key added up.
 function merged(rows, keyOf, fields) {
   const out = new Map();
   for (const r of rows.filter(inApp)) {
@@ -1112,25 +1096,6 @@ function drawStats(s, releases) {
   const where = { ask: 'Asked after a level or streak', result: 'Under a lesson result', home: 'Home card', settings: 'Settings', welcome: 'Welcome tour', photo: 'Photo at the top of home' };
   listRows($('l-gifts'), acc.gifts.map((g) => [where[g.from] ?? 'Before it was counted', g.n]), 'No gifts yet.');
 
-  // The move to GeoTells.
-  const moved = total(s.move.moved, 'n');
-  const g7 = s.move.geosense_7 ?? {};
-  const tells7 = total(s.windows.filter((r) => r.app === 'geotells'), 'active_7');
-  listRows($('l-move'), [
-    ['Moved to GeoTells so far', moved],
-    ['… in the last 7 days', total(s.move.moved.filter((m) => m.day > day(today, -7)), 'n')],
-    ['GeoSense 1.7 and up: can move now', g7.can_move ?? 0],
-    ['Older GeoSense: has to update first', g7.update_first ?? 0],
-    ['GeoTells installs, last 7 days', tells7],
-  ], '');
-  const first = s.move.moved[0]?.day;
-  const movedDays = new Map(s.move.moved.map((m) => [m.day, m.n]));
-  const span = first ? Math.max(1, Math.round((Date.parse(today) - Date.parse(first)) / 864e5) + 1) : 0;
-  columns($('c-moved'), Array.from({ length: Math.min(span, 30) }, (_, i) => {
-    const d = day(today, i - Math.min(span, 30) + 1);
-    return { day: d, n: movedDays.get(d) ?? 0 };
-  }), (d) => shortDay(d.day), [{ key: 'n', color: () => 'var(--gold)' }], { dim: (d) => d.day === today });
-
   drawLearning(s);
   drawHabits(s);
   drawDownloads(s, releases);
@@ -1239,7 +1204,7 @@ function drawHabits(s) {
 
 function drawDownloads(s, releases) {
   const players = (d) => ({ ...d, downloads: Math.max(0, d.downloads - (OWN_DOWNLOADS[d.version] ?? 0)) });
-  const ofApp = (d) => inApp({ app: appOfVersion(d.version) });
+  const ofApp = (d) => isGeoTells(d.version);
   releases = releases.map(players).filter(ofApp);
   const history = s.downloads.map((d) => ({ ...players(d), live: false })).filter(ofApp);
   for (const release of releases) {
@@ -1434,23 +1399,11 @@ $('f-scene-budget').addEventListener('submit', async (ev) => {
 
 // ---- Versions --------------------------------------------------------
 
-// The app whose rule the tab shows: each is told to update from its own
-// website.
-let versionApp = 'geotells';
-const appName = (app) => (app === 'geotells' ? 'GeoTells' : 'GeoSense');
-
-for (const chip of document.querySelectorAll('#version-app .chip')) {
-  chip.addEventListener('click', () => {
-    versionApp = chip.dataset.app;
-    for (const c of document.querySelectorAll('#version-app .chip')) c.setAttribute('aria-pressed', String(c === chip));
-    say($('versions-error'));
-    reload(loadVersions);
-  });
-}
+// GeoTells's rule: players are told to update from geotells.com.
+const versionApp = 'geotells';
 
 async function loadVersions() {
   const v = await call('admin_versions', { p_app: versionApp });
-  $('versions-title').textContent = `Update rule: ${appName(versionApp)}`;
   $('recommended').value = v.recommended || '';
   $('minimum').value = v.minimum || '';
   $('versions-updated').textContent = `Last changed ${new Date(v.updated_at).toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' })}.`;
@@ -1462,7 +1415,7 @@ $('f-versions').addEventListener('submit', async (ev) => {
   say($('versions-error'));
   const recommended = $('recommended').value.trim();
   const minimum = $('minimum').value.trim();
-  if (minimum && !confirm(`${appName(versionApp)} versions below ${minimum} will be blocked until they update from its website. Save?`)) return;
+  if (minimum && !confirm(`GeoTells versions below ${minimum} will be blocked until they update from its website. Save?`)) return;
   const button = ev.submitter;
   button.disabled = true;
   try {
