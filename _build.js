@@ -8,6 +8,8 @@
 const fs = require('fs');
 
 const apk = 'https://github.com/geotells/geotells.github.io/releases/latest/download/GeoTells.apk';
+// For old 32-bit phones and tablets, under "Other versions": the main one is arm64 only.
+const apk32 = 'https://github.com/geotells/geotells.github.io/releases/latest/download/GeoTells-32bit.apk';
 const site = 'https://geotells.com';
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -289,6 +291,12 @@ ${privacyPoints.map(([icon, en, es]) => `      <li><span aria-hidden="true">${ic
       ${t('li', 'If <b>Google Play Protect</b> says it does not know the app, tap <b>More details</b> and then <b>Install anyway</b>.', 'Si <b>Google Play Protect</b> dice que no conoce la app, pulsa <b>Más detalles</b> y luego <b>Instalar de todos modos</b>.')}
       ${t('li', 'Tap <b>Install</b>, then <b>Open</b>. To update it later, download it again from here and install it over the old one: your progress stays.', 'Pulsa <b>Instalar</b> y luego <b>Abrir</b>. Para actualizarla más adelante, vuelve a descargarla desde aquí e instálala encima: no pierdes tu progreso.')}
     </ol>
+  </details>
+
+  <details id="other-versions">
+    ${t('summary', 'Other versions', 'Otras versiones')}
+    ${t('p', 'For older phones and tablets with a 32-bit processor: if GeoTells says it is not compatible, or it installs but closes as soon as you open it, this is the one for you. Install it the same way.', 'Para móviles y tabletas antiguos con procesador de 32 bits: si GeoTells dice que no es compatible, o se instala pero se cierra nada más abrirla, esta es la tuya. Se instala igual.')}
+    <p class="more"><a class="install secondary" href="${apk32}">${t('span', 'Download 32-bit version', 'Descargar versión 32 bits')}</a></p>
   </details>
 
   ${t('p', 'GeoTells is an independent app, not affiliated with Google. Android is a trademark of Google LLC.', 'GeoTells es una app independiente, sin relación con Google. Android es una marca de Google LLC.', 'class="legal"')}
