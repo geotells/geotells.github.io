@@ -7,9 +7,11 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const SUPABASE_URL = 'https://kvlhqytsdhstkjhoclxu.supabase.co';
 const PUBLISHABLE = 'sb_publishable_TOpALZYOS3lzNgfkuiGY2Q_6zpB-Lw3';
-// The website's current APK, for its live download count (geotells.com).
+// The website's current APKs, for its live download count (geotells.com):
+// the main one and, since 2.6.1, the 32-bit one for old phones ("Other
+// versions"), counted together.
 const RELEASES = [
-  { repo: 'geotells/geotells.github.io', apk: 'GeoTells.apk' },
+  { repo: 'geotells/geotells.github.io', apks: ['GeoTells.apk', 'GeoTells-32bit.apk'] },
 ];
 // Website downloads that were ours, not players': a release's APK fetched
 // to check it. Taken off each version's count, live or closed.
@@ -777,13 +779,14 @@ function merged(rows, keyOf, fields) {
   return [...out.values()];
 }
 
-async function fetchRelease({ repo, apk: name }) {
+async function fetchRelease({ repo, apks: [name, ...others] }) {
   try {
     const res = await fetch(`https://api.github.com/repos/${repo}/releases/tags/latest`, { headers: { Accept: 'application/vnd.github+json' } });
     if (!res.ok) return null;
     const r = await res.json();
     const apk = (r.assets || []).find((a) => a.name === name);
-    return apk ? { version: (r.name || '').replace(/^\S+ /, ''), downloads: apk.download_count, published: apk.updated_at.slice(0, 10) } : null;
+    const extra = (r.assets || []).filter((a) => others.includes(a.name)).reduce((n, a) => n + a.download_count, 0);
+    return apk ? { version: (r.name || '').replace(/^\S+ /, ''), downloads: apk.download_count + extra, published: apk.updated_at.slice(0, 10) } : null;
   } catch { return null; }
 }
 
